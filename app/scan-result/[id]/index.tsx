@@ -25,6 +25,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../../config/colors';
+import { useLocale } from '../../../features/i18n/LocaleContext';
 import { useDiagnosis, type DiagnosisData } from '../../../features/diagnosis/useDiagnosis';
 import { LOW_CONFIDENCE_THRESHOLD } from '../../../features/diagnosis/LowConfidenceScreen';
 import AnalysisLoadingScreen from '../../../features/diagnosis/AnalysisLoadingScreen';
@@ -51,6 +52,7 @@ type ScreenState =
  */
 function NewScanController({ uri }: { uri: string }) {
   const router = useRouter();
+  const { t } = useLocale();
   const { phase, data, errorMessage } = useDiagnosis(uri);
   const insets = useSafeAreaInsets();
 
@@ -67,8 +69,8 @@ function NewScanController({ uri }: { uri: string }) {
     return (
       <View style={[styles.errorContainer, { paddingTop: insets.top + 20 }]}>
         <Text style={styles.errorIcon}>⚠</Text>
-        <Text style={styles.errorTitle}>Analysis failed</Text>
-        <Text style={styles.errorBody}>{errorMessage ?? 'Unknown error.'}</Text>
+        <Text style={styles.errorTitle}>{t('common.error_title')}</Text>
+        <Text style={styles.errorBody}>{errorMessage ?? t('common.error_title')}</Text>
       </View>
     );
   }
@@ -102,6 +104,7 @@ function NewScanController({ uri }: { uri: string }) {
  */
 function ExistingScanController({ scanId }: { scanId: string }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [state, setState] = useState<ScreenState>({ kind: 'loading' });
 
   useEffect(() => {
@@ -162,7 +165,7 @@ function ExistingScanController({ scanId }: { scanId: string }) {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorIcon}>⚠</Text>
-        <Text style={styles.errorTitle}>Could not load scan</Text>
+        <Text style={styles.errorTitle}>{t('common.error_load')}</Text>
         <Text style={styles.errorBody}>{state.message}</Text>
       </View>
     );
@@ -193,12 +196,13 @@ function ExistingScanController({ scanId }: { scanId: string }) {
  */
 export default function ScanResultRoute() {
   const { id, uri } = useLocalSearchParams<{ id: string; uri?: string }>();
+  const { t } = useLocale();
 
   if (id === 'new') {
     if (!uri) {
       return (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Missing image URI</Text>
+          <Text style={styles.errorTitle}>{t('common.missing_uri')}</Text>
         </View>
       );
     }

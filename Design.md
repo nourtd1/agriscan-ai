@@ -1,23 +1,23 @@
 # AgriScan AI — Design Document
 
-Skeleton of planned features. Fill in each section as the feature is built.
+All features built as of the final commit. Each section documents status, files, UX, and key decisions.
 
 ---
 
 ## 1. Scan
 
-**Status:** in progress — `CameraScreen` built; diagnosis integration pending
+**Status:** complete
 
 ### Description
 
-The Scan tab is the primary entry point for crop-disease detection.
+The Scan tab (`app/(tabs)/scan/`) is the primary entry point for crop-disease detection.
 
 **UX flow:**
 1. User opens the Scan tab → camera viewfinder fills the top portion of the screen.
-2. A leaf-alignment guide box (semi-transparent dimmed surround + Soft Leaf Green corner accents + label "Frame the affected leaf") helps the farmer centre the affected plant part.
-3. The farmer taps the large circular **"Scan Crop / Tanga Ifoto"** button. The button is elevated with a primary-green drop shadow and an accent-green outer ring.
+2. A leaf-alignment guide box (semi-transparent dimmed surround + Soft Leaf Green corner accents + translated label) helps the farmer centre the affected plant part.
+3. The farmer taps the large circular **"Scan Crop / Tanga Ifoto"** button (bilingual via i18n). The button is elevated with a primary-green drop shadow and an accent-green outer ring.
 4. Alternatively, **"Upload from Gallery"** opens the system image picker (single image, 1:1 crop, 0.85 quality).
-5. Either path navigates to `/scan-result/[id]` with the image URI. The diagnosis screen owns the Gemini API call and Supabase write.
+5. Either path navigates to `/scan-result/[id]?uri=<local-uri>`. The diagnosis screen owns the Gemini API call and Supabase write.
 6. A horizontal thumbnail strip below the controls shows the 5 most-recent scans from Supabase (via `useRecentScans`). Amber badge on scans that are `needs_review`. Tapping a thumbnail navigates to its result screen.
 
 **Permission handling:**
@@ -28,20 +28,28 @@ The Scan tab is the primary entry point for crop-disease detection.
 **Image capture constraints:**
 - Quality: 0.85 (JPEG).
 - Aspect ratio for gallery picker: 1:1.
-- No video; microphone permission is explicitly disabled in `app.json`.
+- No video; microphone permission explicitly disabled in `app.json`.
+
+**File layout:**
+```
+features/scan/
+  CameraScreen.tsx    — full camera screen component
+  useRecentScans.ts   — hook: fetches last 5 scans for thumbnail strip
+app/(tabs)/scan/index.tsx — re-export
+```
 
 ### Key decisions
 
-- `CameraScreen.tsx` lives in `features/scan/` (not `app/`); the route file at `app/(tabs)/scan/index.tsx` is a one-line re-export. This keeps all business logic out of the router layer.
-- `useRecentScans` is a standalone hook so it can be reused on the History tab without prop-drilling.
-- Design tokens (colours) are imported from `config/colors.ts`; no raw hex strings in components.
-- Bilingual capture button label ("Scan Crop / Tanga Ifoto") is hardcoded for now; will be replaced with the i18n system once that feature is built.
+- `CameraScreen.tsx` lives in `features/scan/` (not `app/`); the route file is a one-line re-export. Business logic stays out of the router layer.
+- All visible strings go through `useLocale().t()` — guide label, gallery button, capture label, recent scans strip.
+- `useRecentScans` is isolated so the History tab can share the pattern without prop-drilling.
+- Design tokens imported from `config/colors.ts`; no raw hex strings in components.
 
 ---
 
 ## 2. Diagnosis
 
-**Status:** in progress — Edge Function + all mobile screens built; Auth/onboarding integration pending
+**Status:** complete
 
 ### Description
 
@@ -65,184 +73,104 @@ analyze-crop Edge Function (Deno)
      ├── Retries up to 3× on 503 / RESOURCE_EXHAUSTED with exponential back-off
      └── Strips base64/binary from all log lines
   4. Validates strict JSON schema: { disease, confidence, treatment_steps, severity }
-  5. Writes result to scans table (admin client bypasses RLS for the update)
-  6. If confidence < 0.75 → sets status = "needs_review" and creates an
-     agronomist_reviews row (district copied from users.district)
+  5. Writes result to scans table (service-role client bypasses RLS for the update)
+  6. If confidence < 0.75 → sets status = "needs_review" + creates agronomist_reviews row
      Else → sets status = "diagnosed"
   7. Returns the diagnosis JSON to the caller
 ```
 
-**Gemini prompt (abbreviated):**
-> "You are an expert agronomist. Respond with ONLY a valid JSON object. Schema: `{disease: string, confidence: number [0,1], treatment_steps: string[], severity: 'low'|'medium'|'high'}`."
+**Gemini prompt:** instructs the model to return only bare JSON with schema `{disease, confidence, treatment_steps, severity}`. Temperature 0.1, max 512 tokens, `responseMimeType: "application/json"`.
 
-**Temperature:** 0.1 (deterministic factual output).
-**Max output tokens:** 512.
-**Response MIME type hint:** `application/json`.
+**Retry policy:** HTTP 503 / `RESOURCE_EXHAUSTED` / `UNAVAILABLE` → up to 3 attempts, base 1s backoff × 2^attempt ± 200ms jitter.
 
-**Retry policy:**
-- Retryable conditions: HTTP 503, Gemini status `RESOURCE_EXHAUSTED` or `UNAVAILABLE`.
-- Back-off: `1s × 2^(attempt-1) ± 200ms jitter`, up to 3 attempts.
-- All other errors are thrown immediately (no retry).
-
-**Logging (info level, JSON to stdout):**
-- `gemini_call_start`: attempt number, model, prompt text, generation config, image MIME type, image size in bytes.
-- `gemini_call_end`: attempt, model, HTTP status, parsed response object.
-- `gemini_retry`: attempt, delay until next attempt, retry reason.
-- `diagnosis_complete`: scan ID, disease, confidence, severity, step count.
-- `review_row_created` / `review_row_insert_failed`: scan ID, district.
-- `db_update_failed` / `gemini_failed`: error message.
-- Binary scrubbing: any field starting with `"data:"`, any key matching `/base64/i` or `/inline.?data/i`, and strings longer than 4096 chars are replaced with `"[binary removed]"` or `"[truncated, N chars]"` before logging.
-
-**File layout:**
-```
-supabase/functions/
-  _shared/
-    models.ts    — GEMINI_MODEL + getApiKey() (Deno-compatible mirror of config/models.ts)
-    cors.ts      — shared CORS headers
-    logger.ts    — structured JSON logger with binary scrubbing
-  analyze-crop/
-    index.ts     — request handler, Gemini call, DB write
-```
+**Logging (structured JSON to stdout, binary-scrubbed):** `gemini_call_start`, `gemini_call_end`, `gemini_retry`, `diagnosis_complete`, `review_row_created`, `db_update_failed`, `gemini_failed`.
 
 **Mobile screen flow:**
 
 ```
 app/scan-result/[id]  (route controller)
   │
-  ├── id === "new" → NewScanController
+  ├── id === "new" + uri= → NewScanController → useDiagnosis
+  │     ├── phase uploading/analyzing → AnalysisLoadingScreen
+  │     │     Full-screen photo + glowing green scanline (reanimated worklet)
+  │     │     "Analyzing plant health with Gemini Vision AI…" (i18n)
+  │     │     Kinyarwanda subtext (always shown regardless of locale)
   │     │
-  │     ├── phase: uploading / analyzing
-  │     │       → AnalysisLoadingScreen
-  │     │           Full-screen crop photo + glowing green scanline animation
-  │     │           Status: "Analyzing plant health with Gemini Vision AI…"
-  │     │           Subtext in Kinyarwanda
-  │     │           Phase indicator: "Uploading photo…" / "Running AI analysis…"
+  │     ├── done, confidence ≥ 0.60 → DiagnosisResultScreen
+  │     │     Hero image + severity badge, disease heading,
+  │     │     confidence gauge (20 segments), treatment steps card,
+  │     │     EthicsVerificationSection, Scan Again button,
+  │     │     floating TTS "Listen 🔊" pill (expo-speech)
   │     │
-  │     ├── phase: done, confidence ≥ 0.60
-  │     │       → DiagnosisResultScreen
-  │     │           Hero image + severity badge (green/amber/red pill)
-  │     │           Disease name heading
-  │     │           Confidence gauge (20 segments, colour-coded)
-  │     │           Treatment steps card (numbered list)
-  │     │           "Scan Again" button
-  │     │
-  │     └── phase: done, confidence < 0.60
-  │             → LowConfidenceScreen  ← SAFETY GATE (see below)
+  │     └── done, confidence < 0.60 → LowConfidenceScreen ← SAFETY GATE
+  │           Amber banner, explanation (EN + RW), Retake + Send to Agronomist
   │
   └── id === "<uuid>" → ExistingScanController
-        Fetches scan row from Supabase → same branching as above
-        (no loading animation — result shown directly)
+        Fetches row from Supabase → same confidence branch, no loading animation
 ```
 
 **Feature files:**
 ```
 features/diagnosis/
-  useDiagnosis.ts           — upload → insert scan → call Edge Function → return result
-  AnalysisLoadingScreen.tsx — scanline animation, bilingual status copy
-  DiagnosisResultScreen.tsx — hero, severity badge, confidence gauge, treatment card
-  LowConfidenceScreen.tsx   — amber warning banner, retake + escalate actions
-  index.ts                  — public re-exports
+  useDiagnosis.ts              — upload → insert scan → Edge Function → result
+  AnalysisLoadingScreen.tsx    — scanline animation, bilingual status copy
+  DiagnosisResultScreen.tsx    — hero, gauge, treatment, ethics section, TTS button
+  EthicsVerificationSection.tsx— inline ethics + agronomist escalation card
+  LowConfidenceScreen.tsx      — safety gate: withholds diagnosis + treatment
+  index.ts                     — public re-exports
+supabase/functions/
+  _shared/models.ts cors.ts logger.ts
+  analyze-crop/index.ts + index.dashboard.ts (single-file Dashboard build)
 ```
 
 ### ⚠ Safety gate: low-confidence threshold
 
-**The `LowConfidenceScreen` is a deliberate patient-safety analogue for agriculture.**
+When `confidence < 0.60`, the disease name, confidence %, and treatment steps are **entirely absent** from the UI tree — not hidden, not greyed. Anchoring bias means visible-but-warned numbers still drive decisions. A wrong fungicide on a bacterial infection, or vice versa, can destroy a subsistence crop.
 
-When `confidence < 0.60` (60 %), the following are intentionally withheld:
-- The disease name.
-- The confidence percentage.
-- All treatment steps.
-
-**Why withheld, not just warned about:**
-
-A warning banner alongside a visible diagnosis still anchors the farmer's
-decision to the AI's guess. Research in decision-making under uncertainty
-(anchoring bias) shows that people act on partially-disclosed information
-even when told it may be wrong. A subsistence farmer who misapplies a
-fungicide or pesticide based on a 45 % AI guess may:
-
-1. Spend money on the wrong chemical.
-2. Damage the crop further (e.g., applying a fungicide to a bacterial
-   infection, or vice versa).
-3. Build resistance in the pathogen population.
-4. Lose the harvest — which, in a food-insecure household, is irreversible.
-
-The threshold of 60 % was chosen because:
-- The Edge Function already routes to human review at 75 % (the agronomist
-  review queue exists for the 60–74 % grey zone).
-- Below 60 %, the model is essentially guessing; no treatment plan derived
-  from that guess should reach a farmer without expert sign-off.
-
-**What the screen shows instead:**
-- Amber banner: "AI confidence too low — recommendation withheld"
-- Plain-language explanation + Kinyarwanda subline.
-- **"Retake Photo"** — routes back to CameraScreen. Covers the most common
-  cause: blurry photo, wrong crop part, poor lighting.
-- **"Send Directly to Local Agronomist"** — creates an `agronomist_reviews`
-  row and sets scan status to `needs_review`. A real agronomist will examine
-  the original photo and provide a verified diagnosis.
-
-**Threshold constants:**
-
-| Constant | Value | Location | Meaning |
+| Constant | Value | Owner | Effect |
 |---|---|---|---|
-| `REVIEW_THRESHOLD` | 0.75 | Edge Function `analyze-crop/index.ts` | Server-side: below this, creates a review row |
-| `LOW_CONFIDENCE_THRESHOLD` | 0.60 | `features/diagnosis/LowConfidenceScreen.tsx` | Client-side: below this, withholds diagnosis entirely |
-
-The two thresholds are intentionally separate. The 0.75–1.00 range shows the
-diagnosis AND queues it for passive agronomist review. The 0.60–0.74 range
-shows the diagnosis but the review queue already exists. Below 0.60, nothing
-is shown.
+| `REVIEW_THRESHOLD` | 0.75 | Edge Function | Server auto-creates review row |
+| `LOW_CONFIDENCE_THRESHOLD` | 0.60 | `LowConfidenceScreen.tsx` | Client withholds all diagnosis output |
 
 ### Key decisions
 
-- **API key never leaves the server.** `getApiKey()` in `_shared/models.ts` calls `Deno.env.get("GEMINI_API_KEY")`. The mobile app has no reference to the key whatsoever.
-- **`_shared/models.ts` mirrors `config/models.ts`.** Edge Functions run Deno, not Node, so `process.env` is unavailable. Two separate files share the same model-name constant; both must be updated in sync when the model changes.
-- **Service-role client for DB writes.** The function verifies JWT ownership first, then uses the service-role client to write the diagnosis — this is necessary because RLS only allows the user to update their own rows, but the function runs in a server context without the user's session cookie.
-- **`needs_review` row created atomically.** If confidence < 0.75, the agronomist review row is inserted in the same function invocation. Failure is non-fatal (logged as warn); the scan is still marked `needs_review`.
-- **`verify_jwt = true` in `config.toml`.** Unauthenticated calls are rejected at the Edge Function gateway level before our code runs.
-- **Route controller, not screen, owns the threshold branch.** `app/scan-result/[id]/index.tsx` decides which screen to render. Neither `DiagnosisResultScreen` nor `LowConfidenceScreen` knows about the other — they are fully independent components. This makes the threshold easy to test in isolation.
-- **Scanline uses `react-native-reanimated` worklets.** The sweep animation runs on the UI thread via `useSharedValue` + `withRepeat`, so it never drops frames while the JS thread is busy uploading/fetching.
+- API key read-only inside Edge Function via `Deno.env.get("GEMINI_API_KEY")`. Never in the app bundle.
+- `_shared/models.ts` is a Deno-compatible mirror of `config/models.ts` (uses `Deno.env.get` not `process.env`). Both must be updated together when the model changes.
+- Service-role client for DB writes. Ownership check happens first; then the admin client performs the update outside RLS.
+- Route controller (`app/scan-result/[id]/index.tsx`) owns all confidence branching. Each result screen is independent and unaware of the others.
+- Scanline animation runs on the UI thread via `useSharedValue` + `withRepeat` — never drops frames during upload.
 
 ---
 
 ## 3. Human Verification
 
-**Status:** complete — ethics section on result screen + onboarding + history + profile built
+**Status:** complete
 
 ### Description
 
-Human verification is integrated at two levels:
+Two-level integration:
 
-**Level 1 — Automatic server-side routing (Edge Function)**
-Scans with confidence < 0.75 automatically get an `agronomist_reviews` row created and status set to `needs_review`. The farmer doesn't need to do anything.
+**Level 1 — Automatic (Edge Function):** confidence < 0.75 → `agronomist_reviews` row auto-created + status → `needs_review`.
 
-**Level 2 — Voluntary farmer-initiated escalation (EthicsVerificationSection)**
-Every result screen (confidence ≥ 0.60) shows an "Ethical AI & Human Verification" section below the treatment steps card. This gives the farmer agency to request human review even for high-confidence results.
+**Level 2 — Voluntary (EthicsVerificationSection):** every high-confidence result screen shows an inline verification card. States:
 
-**`EthicsVerificationSection` component** (`features/diagnosis/EthicsVerificationSection.tsx`):
-
-| State | What is shown |
+| State | UI |
 |---|---|
-| `idle` | Banner + "Why human verification?" box + "Send to Local District Agronomist" button |
-| `sending` | Button replaced with activity indicator |
-| `pending` | Status card: amber dot + "Pending Agronomist Review" + sub-copy |
-| `reviewed` | Status card: green dot + "Verified by Agronomist" |
-| `error` | Inline error text with implicit retry (re-tap button) |
+| `idle` | Amber/red banner + "Why human verification?" box + send button |
+| `sending` | Activity indicator |
+| `pending` | Amber dot status card: "Pending Agronomist Review" |
+| `reviewed` | Green dot status card: "Verified by Agronomist" |
+| `error` | Inline error text |
 
-The banner border colour escalates with severity: amber for low/medium, red for high. This makes the nudge more prominent on the cases where human verification matters most.
+Banner border: amber for low/medium severity, red for high. Initial state derived from `currentStatus` prop — no extra fetch needed when loading an existing scan.
 
-**Supabase writes on send:**
-1. `scans.status` → `"needs_review"`
-2. `agronomist_reviews` INSERT with user's district
-
-**Why inline, not a separate screen:** Requiring navigation to a dedicated "request review" screen would mean most farmers never use it. Inline placement guarantees every farmer sees the option without extra steps.
+**Supabase writes on send:** `scans.status → "needs_review"` + `agronomist_reviews INSERT`.
 
 ### Key decisions
 
-- **`EthicsVerificationSection` derives its initial state from `currentStatus` prop.** When navigating to an existing scan that is already `needs_review` or `verified`, the correct state card is shown immediately without any extra fetch.
-- **The "Why human verification?" explanation is always visible, not collapsed.** Transparency about AI limitations is the point; hiding it behind a disclosure would undermine the message.
-- **TTS has no "Listen" button on `LowConfidenceScreen`.** Reading withheld content aloud would defeat the safety gate.
+- Inline, not a separate screen — friction kills adoption of optional safety features.
+- "Why human verification?" is always visible — transparency is the product, not a footnote.
+- No TTS on `LowConfidenceScreen` — reading withheld content aloud defeats the safety gate.
 
 ---
 
@@ -252,41 +180,24 @@ The banner border colour escalates with severity: amber for low/medium, red for 
 
 ### Description
 
-**File layout:**
-```
-features/history/
-  useHistory.ts      — data hook: fetch all scans, client-side filter
-  HistoryScreen.tsx  — filterable list UI
-app/(tabs)/history/index.tsx — re-export
-```
+**Files:** `features/history/useHistory.ts`, `HistoryScreen.tsx` → `app/(tabs)/history/index.tsx`
 
-**Filter tabs** (horizontal pill strip at top):
+Filter tabs (client-side, instant switching):
 
-| Tab | Filter logic |
+| Tab | Logic |
 |---|---|
 | All | All statuses |
 | Healthy | `status == "diagnosed"` AND `diagnosis == "healthy"` |
 | Needs Review | `status in ["needs_review", "pending"]` |
 | Verified | `status == "verified"` |
 
-Filtering is client-side — all scans are fetched once and filtered in JS. This avoids multiple round-trips and allows instant tab switching.
-
-**Scan card layout:**
-- 72×72 thumbnail (crop photo) with a severity colour dot overlay
-- Disease name (or status label if not yet diagnosed)
-- Status badge: coloured dot + label (Pending / Diagnosed / Needs Review / Verified / Rejected)
-- Date scanned
-- Chevron → taps navigate to `/scan-result/<id>`
-
-**Pull-to-refresh** wired to `useHistory.refresh()`.
-
-**Empty state:** leaf emoji + bilingual copy when no scans match the active filter.
+Scan card: 72px thumbnail + severity colour dot + disease name + status badge (coloured dot + label) + date. Pull-to-refresh. Empty state with leaf emoji + bilingual copy.
 
 ### Key decisions
 
-- **No local SQLite/AsyncStorage.** All history data lives in Supabase. This keeps the data model simple and ensures consistency across devices. Offline support is a future iteration.
-- **Client-side filtering.** For the expected volume (tens to low hundreds of scans per user), fetching all rows and filtering in JS is faster than multiple DB queries with different WHERE clauses.
-- **`useRecentScans` (camera screen) and `useHistory` are separate hooks.** They have different shapes (recent = 5 items, history = all + filters). Merging them would add complexity for no benefit.
+- All history in Supabase — no local SQLite. Consistent across devices; offline support is a future iteration.
+- Client-side filtering — one fetch, instant tab switching for expected scan volumes.
+- `useHistory` and `useRecentScans` are separate hooks with different shapes — no shared abstraction.
 
 ---
 
@@ -294,50 +205,25 @@ Filtering is client-side — all scans are fetched once and filtered in JS. This
 
 **Status:** complete
 
-### Description
+**Supported locales:** `en` (English), `rw` (Kinyarwanda), `sw` (Kiswahili), `fr` (French).
 
-**Supported locales:**
+**Engine:** `i18n-js` v4. Single instance in `features/i18n/i18n.ts`. `enableFallback = true`.
 
-| Code | Language | File |
-|---|---|---|
-| `en` | English | `locales/en.json` |
-| `rw` | Kinyarwanda | `locales/rw.json` |
-| `sw` | Kiswahili | `locales/sw.json` |
-| `fr` | French | `locales/fr.json` |
+**`LocaleContext`** owns active locale. `useLocale()` → `{ locale, setLocale, t }`. `t()` is a stable `useCallback` that rebinds on locale change. `setLocale` persists to `users.preferred_language` fire-and-forget.
 
-**Engine:** `i18n-js` v4 (`I18n` class). Single instance in `features/i18n/i18n.ts`. `enableFallback = true` so missing keys fall through to English rather than crashing.
+**Init order:** device locale (instant) → Supabase `preferred_language` override (async).
 
-**Runtime switching:** `LocaleContext` (React context + provider) owns the active locale. Components call `useLocale()` to get `{ locale, setLocale, t }`. The `t(key, params?)` shorthand is a stable callback that rebinds when `locale` changes, triggering re-renders across the tree without prop-drilling.
+**`LanguageSelector`** component: 4 locale pills, compact mode for headers, full-label mode for Profile. Placed in `headerRight` of every tab so it's reachable from any screen.
 
-**Initialisation order:**
-1. Optimistic device locale from `expo-localization` (instant, no network).
-2. Async load of `users.preferred_language` from Supabase on mount.
-3. If the DB value is set and differs from device, it overrides (step 2 wins).
+**String key namespaces:** `scan.*`, `history.*`, `profile.*`, `onboarding.*`, `diagnosis.*`, `low_confidence.*`, `ethics.*`, `tts.*`, `language.*`, `common.*`.
 
-**Persistence:** `setLocale(code)` writes to `public.users.preferred_language` fire-and-forget. UI updates immediately; DB write happens in the background.
-
-**Language selector:** `LanguageSelector` component — a row of four locale pills (EN / RW / SW / FR). Active pill: filled emerald-green. Inactive: ghost outline. Placed via `headerRight` in the tabs layout so it's accessible from every screen. Also usable inline on the Profile screen.
-
-**String key structure:**
-```
-scan.*         — CameraScreen strings
-history.*      — History tab
-profile.*      — Profile tab
-diagnosis.*    — Loading, result, TTS button labels, severity badges
-low_confidence.* — Warning banner, explanation, action buttons
-tts.*          — TTS not-supported message, spoken script template
-language.*     — Locale pill labels
-common.*       — Shared error strings
-```
-
-**RTL:** not implemented in this iteration. Kinyarwanda and Swahili are LTR. French is LTR. Add `I18nManager.forceRTL` if Arabic/Amharic support is added.
+**Files:** `features/i18n/i18n.ts`, `LocaleContext.tsx`, `LanguageSelector.tsx`, `index.ts` · `locales/{en,rw,sw,fr}.json`
 
 ### Key decisions
 
-- **Context, not global state.** `LocaleProvider` is the React tree's single locale owner. `i18n.locale` is mutated as a side effect of context state, not the other way around — this ensures React re-renders propagate correctly.
-- **`t()` is a stable `useCallback`.** It rebinds on locale change, which is the only signal consumers need. Components don't import `i18n` directly.
-- **All UI strings must go through `t()`.** Hardcoded strings in components are a lint violation (enforce with a custom ESLint rule when the project matures).
-- **Loading sub-copy is always Kinyarwanda.** The `diagnosis.loading_sub` key is deliberately the complementary language (Kinyarwanda when locale is EN, English when locale is RW). This is intentional — the sub-copy is a secondary confirmation that the system is multilingual, not a translation of the primary copy.
+- Context, not global state — `i18n.locale` mutated as side-effect of React state, not the source of truth.
+- All visible strings go through `t()`. Hardcoded strings are a defect.
+- `diagnosis.loading_sub` is always Kinyarwanda regardless of active locale — intentional secondary-language signal, not a translation of the primary copy.
 
 ---
 
@@ -345,43 +231,17 @@ common.*       — Shared error strings
 
 **Status:** complete
 
-### Description
+**Library:** `expo-speech`. **Hook:** `features/tts/useTTS(data, locale)` → `{ isSpeaking, isSupported, speak, stop }`.
 
-**Library:** `expo-speech` — cross-platform, no extra native module setup required beyond the Expo managed workflow.
+**Script template** (`tts.intro` in each locale): `"Diagnosis result. Disease: {disease}. Confidence: {pct} percent. Severity: {severity}. Treatment steps: {steps}"`. Steps joined with ". " for natural pauses.
 
-**Entry point:** `features/tts/useTTS(data, locale)` hook. Returns `{ isSpeaking, isSupported, speak, stop }`.
+**Voice selection:** BCP-47 tags — `en-US`, `rw-RW` (phonetic fallback), `sw-TZ`, `fr-FR`.
 
-**Spoken script template** (from `tts.intro` in each locale file):
-```
-"Diagnosis result. Disease: {disease}. Confidence: {pct} percent.
- Severity: {severity}. Treatment steps: {step1}. {step2}. …"
-```
-Steps are joined with ". " so the TTS engine pauses naturally between them.
+**`TTSButton`:** floating pill, `position: absolute`, `bottom + 16`, `right: 20` — hovers over ScrollView. Idle: emerald "Listen 🔊". Speaking: amber "Stop 🔇". Hidden if `isSupported === false`. No TTS on `LowConfidenceScreen`.
 
-**Voice/language selection:** `LOCALE_SPEECH_LANG` maps locale codes to BCP-47 tags:
+**Lifecycle:** stops on unmount, double-tap toggles off, `onDone/onError/onStopped` all reset state.
 
-| Locale | BCP-47 tag |
-|---|---|
-| `en` | `en-US` |
-| `rw` | `rw-RW` (no dedicated voice on most devices — OS falls back to default voice and reads phonetically) |
-| `sw` | `sw-TZ` |
-| `fr` | `fr-FR` |
-
-The phonetic fallback for Kinyarwanda is an acceptable degradation. The text is still spoken in the correct sequence; the pronunciation will not be perfect, but the content is correct. A native Kinyarwanda TTS voice would require an off-device API.
-
-**UI affordance:** `TTSButton` is a floating pill anchored `position: absolute` at `bottom + 16`, `right: 20` — it hovers over the `ScrollView` content without participating in the scroll layout. Idle state: emerald-green fill ("Listen 🔊"). Speaking state: amber fill ("Stop 🔇"). Hidden if `isSupported === false`.
-
-**Lifecycle:**
-- Playback stops when the component unmounts (navigation away).
-- Double-tap: tapping while speaking calls `stop()` immediately.
-- `onDone / onError / onStopped` callbacks all reset `isSpeaking` to false.
-
-### Key decisions
-
-- **`useTTS` is locale-aware.** The hook receives `locale` as a parameter (not read from context internally) so it stays a pure function of its inputs and is easy to test.
-- **Rate 0.92.** Slightly slower than the system default (1.0) for clarity in field conditions (outdoor ambient noise, non-native speakers).
-- **Script is built from i18n templates.** The `tts.intro` key in each locale file controls the spoken structure. Changing the script format for one language does not require touching the hook code.
-- **TTS button is inside `DiagnosisResultScreen`, not the route controller.** The low-confidence screen deliberately has no TTS button — reading a withheld diagnosis aloud would defeat the safety gate.
+**Files:** `features/tts/useTTS.ts`, `index.ts`
 
 ---
 
@@ -389,46 +249,21 @@ The phonetic fallback for Kinyarwanda is an acceptable degradation. The text is 
 
 **Status:** complete
 
-### Description
-
 Three-screen linear flow: Welcome → Language → Camera Permission.
 
-```
-app/(onboarding)/
-  index.tsx       → WelcomeScreen
-  language.tsx    → LanguageSelectScreen
-  permission.tsx  → CameraPermissionScreen
+**WelcomeScreen:** deep emerald background, 🌿 logo circle, bilingual subtitle, leaf row, accent-green "Get Started" CTA.
 
-features/onboarding/
-  WelcomeScreen.tsx
-  LanguageSelectScreen.tsx
-  CameraPermissionScreen.tsx
-```
+**LanguageSelectScreen:** large card per language (flag + autonym + English name + check mark). Full-row targets for low-literacy farmers. Calls `setLocale(selected)` on Continue.
 
-**WelcomeScreen**
-- Deep emerald green full-screen background.
-- Large 🌿 logo circle with frosted border.
-- Bilingual subtitle: English primary + Kinyarwanda secondary.
-- Decorative leaf emoji row.
-- Accent-green "Get Started" button → navigates to language screen.
+**CameraPermissionScreen:** camera + leaf illustration, bilingual explanation, `requestPermission()` → `router.replace('/(tabs)/scan')`. `canAskAgain === false` → "Open Settings". Skip navigates without requesting.
 
-**LanguageSelectScreen**
-- Large-target language cards (full row, not compact pills) — critical for low-literacy farmers who identify their language by flag + autonym rather than a 2-letter code.
-- Each card: flag emoji + autonym (name in that language) + English name + check mark when selected.
-- "Continue" button calls `setLocale(selected)` then navigates to permission screen.
-
-**CameraPermissionScreen**
-- Camera + leaf illustration.
-- Explains why camera is needed (bilingual: English + Kinyarwanda).
-- "Allow Camera Access" → `requestPermission()` → on grant, `router.replace('/(tabs)/scan')`.
-- "Skip for now" → `router.replace('/(tabs)/scan')` without requesting (CameraScreen handles it).
-- If permission was previously denied and `canAskAgain === false`: shows "Open Settings" instead of "Allow".
+**Files:** `features/onboarding/{Welcome,LanguageSelect,CameraPermission}Screen.tsx` · `app/(onboarding)/{index,language,permission}.tsx`
 
 ### Key decisions
 
-- **Language is set during onboarding, before auth.** This means the app is localised from the first interaction, not after login.
-- **No auth on onboarding screens.** Authentication is deferred to Supabase Auth (not yet built). The onboarding flow is intentionally auth-free so it can be previewed without a Supabase account.
-- **`router.replace` (not `push`) from permission → scan.** This removes the onboarding stack from history so the back button doesn't return to onboarding after the app is set up.
+- Language set before auth — app is localised from first interaction.
+- No auth gates on onboarding screens.
+- `router.replace` (not `push`) from permission screen — removes onboarding from back-stack.
 
 ---
 
@@ -436,89 +271,106 @@ features/onboarding/
 
 **Status:** complete
 
-### Description
+**File:** `features/profile/ProfileScreen.tsx` → `app/(tabs)/profile/index.tsx`
 
-**File:** `features/profile/ProfileScreen.tsx`  →  `app/(tabs)/profile/index.tsx`
-
-Sections:
-- **Signed in as** — displays the authenticated user's email.
-- **Language** — `LanguageSelector` (full labels, not compact) wired to `useLocale`.
-- **District** — `TextInput` with `onEndEditing` saving to `users.district`. Shows a ✓ tick on save and an activity indicator while saving.
-- **Sign out** — calls `supabase.auth.signOut()`.
-- **Version** — reads from `Constants.expoConfig.version`.
+Sections: signed-in email, `LanguageSelector` (full labels), district `TextInput` (saves on blur, ✓ tick), sign-out, app version.
 
 ### Key decisions
 
-- **District is saved on `onEndEditing`** (keyboard dismiss or return key) not on every keystroke. This avoids excessive DB writes while the user is still typing.
-- **Sign-out is a local Supabase call** — no separate confirmation dialog for now. The navigation guard (not yet built) will redirect to onboarding on session loss.
+- District saved on `onEndEditing` — avoids write-on-every-keystroke.
+- Sign-out calls `supabase.auth.signOut()` directly; navigation guard (future) handles redirect to onboarding.
 
 ---
 
-## Appendix: Non-feature decisions
+## 9. Demo Seed
 
-<!-- Architecture, navigation structure, state management, testing strategy -->
+**Status:** complete
+
+**File:** `scripts/seed-demo.ts`
+
+Inserts 4 realistic demo scans using the service-role client (bypasses RLS). Gated behind `--dry-run` flag.
+
+```bash
+npm run seed:dry    # log inserts, no DB writes
+npm run seed        # live insert into Supabase
+```
+
+**Demo cases:**
+
+| # | Crop | Disease | Confidence | Severity | Status |
+|---|---|---|---|---|---|
+| 1 | Maize | healthy | 0.94 | low | diagnosed |
+| 2 | Potato | Late Blight | 0.87 | high | needs_review |
+| 3 | Bean | Powdery Mildew | 0.72 | medium | diagnosed |
+| 4 | Sorghum | unknown | 0.41 | low | needs_review |
+
+Cases 2 and 4 exercise the `needs_review` branch. Case 4 (confidence 0.41) exercises the `LowConfidenceScreen` safety gate. Case 1 exercises the "Healthy" filter tab in History.
+
+### Key decisions
+
+- Uses service-role key (never `anon` key) to write on behalf of any user.
+- Detects first user in `public.users` automatically; falls back to a fixed placeholder UUID.
+- Stable Unsplash URLs for thumbnails so History renders correctly without a real Storage bucket.
+
+---
+
+## Appendix: Architecture decisions
+
+**Route-feature separation.** Every `app/` route file is a thin re-export of a component in `features/`. Business logic never lives in the router layer.
+
+**Design tokens.** All colours in `config/colors.ts`. All model/key config in `config/models.ts` (Node) and `supabase/functions/_shared/models.ts` (Deno). No raw strings elsewhere.
+
+**RLS everywhere.** Every Supabase table has RLS enabled with explicit policies. The service-role client is only used in the Edge Function and seed script — never in the mobile app.
+
+**Navigation contract.** `router.push` for drill-down (camera → result). `router.replace` from terminal screens (permission → scan, result "Scan Again" → scan). This keeps the back-stack clean.
 
 ---
 
 ## Data model
 
-Supabase (PostgreSQL). Migrations live in `supabase/migrations/`. Types are hand-authored in `config/database.types.ts` until `supabase gen types` is wired into CI.
+Supabase (PostgreSQL). Migrations in `supabase/migrations/`. Types hand-authored in `config/database.types.ts`.
 
 ### `public.users`
-
-Extends `auth.users`. Stores the fields the app needs beyond authentication.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid` | FK → `auth.users.id`, PK |
-| `district` | `text` | Farmer's geographic district; used to route scans to the right agronomist pool |
-| `preferred_language` | `text` | Drives i18n locale and TTS voice selection; defaults to `'en'` |
+| `district` | `text` | Routes scans to the correct agronomist pool |
+| `preferred_language` | `text` | Drives i18n locale + TTS voice; defaults `'en'` |
 | `created_at` | `timestamptz` | |
 
-**RLS:** users read/write only their own row.
-
----
+RLS: own-row read/write only.
 
 ### `public.scans`
-
-Core entity — one row per photo submitted by a farmer.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid` | PK |
 | `user_id` | `uuid` | FK → `users.id` |
-| `image_url` | `text` | Supabase Storage URL of the uploaded photo |
-| `crop_type` | `text` | Detected or user-supplied crop name |
-| `diagnosis` | `text` | Gemini's disease/pest diagnosis text |
-| `confidence` | `numeric(5,4)` | Gemini confidence in [0, 1]; values below 0.75 trigger `needs_review` |
-| `treatment_steps` | `text[]` | Ordered list of remediation steps returned by Gemini |
-| `severity` | `text` | `low` / `medium` / `high`; null until analysed |
+| `image_url` | `text` | Supabase Storage public URL |
+| `crop_type` | `text` | Detected or user-supplied |
+| `diagnosis` | `text` | Gemini disease name; `"healthy"` if no disease |
+| `confidence` | `numeric(5,4)` | [0,1]; < 0.75 → auto review row |
+| `treatment_steps` | `text[]` | Ordered remediation steps |
+| `severity` | `text` | `low` / `medium` / `high` |
 | `status` | `scan_status` enum | `pending → diagnosed → needs_review → verified / rejected` |
 | `created_at` | `timestamptz` | |
 
-**RLS:** farmers read, insert, update, and delete only their own scans.
-
----
+RLS: own-row CRUD only.
 
 ### `public.agronomist_reviews`
-
-Human-verification queue. Created when `scans.confidence` is below threshold.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid` | PK |
 | `scan_id` | `uuid` | FK → `scans.id` |
-| `agronomist_id` | `uuid` | FK → `auth.users.id`; null until a reviewer picks it up |
-| `district` | `text` | Denormalised from `users.district` at insert time; keeps RLS fast without a join |
+| `agronomist_id` | `uuid` | FK → `auth.users.id`; null until claimed |
+| `district` | `text` | Denormalised from `users.district` for fast RLS |
 | `status` | `review_status` enum | `pending → in_progress → approved / rejected` |
 | `notes` | `text` | Agronomist's written assessment |
 | `created_at` | `timestamptz` | |
 
-**RLS:**
-- Scan owners can select reviews attached to their own scans.
-- Agronomists can select **and update** reviews whose `district` matches their own `users.district`.
-
----
+RLS: scan owners select own; agronomists select + update by matching district.
 
 ### Enum reference
 
@@ -526,3 +378,13 @@ Human-verification queue. Created when `scans.confidence` is below threshold.
 |---|---|
 | `scan_status` | `pending`, `diagnosed`, `needs_review`, `verified`, `rejected` |
 | `review_status` | `pending`, `in_progress`, `approved`, `rejected` |
+| `severity` | `low`, `medium`, `high` |
+
+### Migrations
+
+| File | What |
+|---|---|
+| `20260728000001_create_users.sql` | users table + RLS |
+| `20260728000002_create_scans.sql` | scans table + scan_status enum + RLS |
+| `20260728000003_create_agronomist_reviews.sql` | reviews table + review_status enum + RLS |
+| `20260728000004_scans_add_diagnosis_fields.sql` | adds treatment_steps, severity columns |

@@ -47,6 +47,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../config/colors';
+import { useLocale } from '../i18n/LocaleContext';
 import { useRecentScans } from './useRecentScans';
 import type { ScanRow } from './useRecentScans';
 
@@ -64,8 +65,10 @@ const THUMBNAIL_SIZE = 72;
  * GuideBox — the semi-transparent leaf-alignment overlay drawn on top of the
  * viewfinder. Corner accents reinforce the "frame your crop here" affordance
  * without obscuring too much of the live preview.
+ *
+ * @param label - Translated guide label string passed from parent.
  */
-function GuideBox() {
+function GuideBox({ label }: { label: string }) {
   return (
     <View style={styles.guideWrapper} pointerEvents="none">
       {/* dimmed sides */}
@@ -73,12 +76,12 @@ function GuideBox() {
       <View style={styles.guideMiddleRow}>
         <View style={styles.guideDimSide} />
         <View style={styles.guideBox}>
-          {/* corner accents — top-left */}
+          {/* corner accents */}
           <View style={[styles.corner, styles.cornerTL]} />
           <View style={[styles.corner, styles.cornerTR]} />
           <View style={[styles.corner, styles.cornerBL]} />
           <View style={[styles.corner, styles.cornerBR]} />
-          <Text style={styles.guideLabel}>Frame the affected leaf</Text>
+          <Text style={styles.guideLabel}>{label}</Text>
         </View>
         <View style={styles.guideDimSide} />
       </View>
@@ -153,6 +156,7 @@ function PermissionPrompt({ onRequest }: { onRequest: () => void }) {
 export default function CameraScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useLocale();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
@@ -241,7 +245,7 @@ export default function CameraScreen() {
       {/* ── Viewfinder ── */}
       <View style={styles.viewfinderContainer}>
         <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
-        <GuideBox />
+        <GuideBox label={t('scan.guide_label')} />
       </View>
 
       {/* ── Controls panel ── */}
@@ -250,10 +254,10 @@ export default function CameraScreen() {
         <Pressable
           onPress={pickFromGallery}
           style={({ pressed }) => [styles.galleryButton, pressed && styles.galleryButtonPressed]}
-          accessibilityLabel="Upload photo from gallery"
+          accessibilityLabel={t('scan.gallery')}
           accessibilityRole="button"
         >
-          <Text style={styles.galleryButtonText}>Upload from Gallery</Text>
+          <Text style={styles.galleryButtonText}>{t('scan.gallery')}</Text>
         </Pressable>
 
         {/* Circular capture button */}
@@ -265,13 +269,13 @@ export default function CameraScreen() {
             pressed && styles.captureButtonPressed,
             isCapturing && styles.captureButtonDisabled,
           ]}
-          accessibilityLabel="Capture crop photo"
+          accessibilityLabel={t('scan.cta')}
           accessibilityRole="button"
         >
           {isCapturing ? (
             <ActivityIndicator color={Colors.surface} size="small" />
           ) : (
-            <Text style={styles.captureLabel}>{'Scan Crop\nTanga Ifoto'}</Text>
+            <Text style={styles.captureLabel}>{`${t('scan.cta')}\n${t('scan.cta_sub')}`}</Text>
           )}
         </Pressable>
 
@@ -281,11 +285,11 @@ export default function CameraScreen() {
 
       {/* ── Recent scans strip ── */}
       <View style={styles.recentContainer}>
-        <Text style={styles.recentTitle}>Recent scans</Text>
+        <Text style={styles.recentTitle}>{t('scan.recent')}</Text>
         {scansLoading ? (
           <ActivityIndicator color={Colors.accent} style={{ marginTop: 8 }} />
         ) : scans.length === 0 ? (
-          <Text style={styles.recentEmpty}>No scans yet — take your first photo above.</Text>
+          <Text style={styles.recentEmpty}>{t('scan.recent_empty')}</Text>
         ) : (
           <FlatList
             data={scans}

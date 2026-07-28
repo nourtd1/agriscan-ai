@@ -168,12 +168,7 @@ const styles = StyleSheet.create({
   },
   vignette: {
     ...StyleSheet.absoluteFillObject,
-    // Gradient-like effect: top clear, bottom heavy dark.
-    backgroundColor: 'transparent',
-    // Simulate gradient with a translucent layer.
-    background: undefined, // not available in RN; use panel overlay instead.
-    opacity: 0.35,
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   // ── Scanline ─────────────────────────────────────────────────────────────
   scanline: {
