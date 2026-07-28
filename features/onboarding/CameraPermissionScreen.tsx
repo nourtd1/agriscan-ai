@@ -31,7 +31,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera } from 'expo-camera';
+import { useCameraPermissions } from 'expo-camera';
 import { Colors } from '../../config/colors';
 import { useLocale } from '../i18n/LocaleContext';
 
@@ -44,7 +44,7 @@ export default function CameraPermissionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useLocale();
-  const [permission, requestPermission] = Camera.useCameraPermissions();
+  const [permission, requestPermission] = useCameraPermissions();
 
   /** Requests permission; navigates to scan tab on grant. */
   const handleGrant = useCallback(async () => {
