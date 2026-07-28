@@ -109,18 +109,18 @@ export function useDiagnosis(imageUri: string | null): UseDiagnosisResult {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Session expired. Please log in again.');
 
-      const formData = new FormData();
-      formData.append('scan_id', scanRow.id);
-      // React Native FormData accepts { uri, name, type } directly — no File constructor needed.
-      formData.append('image', { uri, name: `crop.${ext}`, type: mimeType } as any);
-
+      // Send only scan_id as JSON — the Edge Function fetches the image
+      // from Supabase Storage using the public URL already stored in the scan row.
       const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
       const fnResponse = await fetch(
         `${supabaseUrl}/functions/v1/analyze-crop`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          body: formData,
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ scan_id: scanRow.id }),
         },
       );
 

@@ -140,7 +140,13 @@ async function callGeminiWithRetry(
 
   // Convert bytes to base64 for the inline_data part — only inside this
   // function; never reaches logs (scrubbed by logger).
-  const base64Image = btoa(String.fromCharCode(...imageBytes));
+  // Chunked base64 to avoid call stack overflow on large images.
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < imageBytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...imageBytes.subarray(i, i + chunkSize));
+  }
+  const base64Image = btoa(binary);
 
   const requestBody = {
     contents: [
