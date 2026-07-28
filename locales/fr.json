@@ -1,0 +1,17 @@
+{
+  "scan": {
+    "title": "Scanner",
+    "cta": "Prendre une photo"
+  },
+  "history": {
+    "title": "Historique",
+    "empty": "Aucun scan pour l'instant"
+  },
+  "profile": {
+    "title": "Profil"
+  },
+  "diagnosis": {
+    "loading": "Analyse en cours…",
+    "error": "Analyse échouée. Veuillez réessayer."
+  }
+}
