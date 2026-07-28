@@ -1,117 +1,76 @@
 /**
  * AnalysisLoadingScreen — full-screen overlay shown while Gemini analyses a crop image.
- *
- * Feature: Diagnosis / Loading
- * ----------------------------
- * Displayed immediately after the farmer taps "Scan Crop" or picks from gallery.
- * The screen fills the viewport with the captured photo and overlays:
- *
- *  - A glowing green scanline that sweeps top→bottom in a continuous loop,
- *    conveying that the image is being actively "read" by the AI.
- *  - A dark-tinted bottom panel with:
- *      • Pulsing AgriScan brand dot.
- *      • Primary status copy: "Analyzing plant health with Gemini Vision AI…"
- *      • Sub-copy in Kinyarwanda: "Tugenzura ubuzima bw'ibimera…"
- *      • Progress indicator for the current phase (uploading / analyzing).
- *
- * The screen transitions automatically once `useDiagnosis` reports `done` or
- * `error`; the parent route drives navigation.
- *
- * Use cases
- * ---------
- * - Farmer waits 2–8 seconds while the image is uploaded and Gemini responds.
- * - Slow network: "Uploading photo…" copy reassures the farmer that upload is
- *   in progress before the AI step begins.
- * - Error path: a brief shake animation signals failure before the screen pops.
+ * Uses React Native's built-in Animated API (no native modules required for Expo Go).
  */
 
-import React, { useEffect } from 'react';
-import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
-import Animated, {
+import React, { useEffect, useRef } from 'react';
+import {
+  Animated,
+  Dimensions,
   Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-  cancelAnimation,
-} from 'react-native-reanimated';
+  Image,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Colors } from '../../config/colors';
 import { useLocale } from '../i18n/LocaleContext';
 import type { DiagnosisPhase } from './useDiagnosis';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const { height: SCREEN_H } = Dimensions.get('window');
-
-/** Duration of one full scanline sweep in ms. */
 const SCANLINE_DURATION_MS = 1800;
-
-/** Duration of the pulse opacity cycle in ms. */
 const PULSE_DURATION_MS = 900;
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
 interface AnalysisLoadingScreenProps {
-  /** Local URI of the captured / picked image shown behind the overlay. */
   imageUri: string;
-  /** Current pipeline phase from `useDiagnosis`. */
   phase: DiagnosisPhase;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-/**
- * Full-screen loading overlay for the analysis pipeline.
- *
- * @param imageUri - The local image URI displayed as the background.
- * @param phase    - Current phase drives the status copy.
- */
 export default function AnalysisLoadingScreen({
   imageUri,
   phase,
 }: AnalysisLoadingScreenProps) {
   const { t } = useLocale();
-  // Scanline: translateY sweeps from -SCANLINE_H to SCREEN_H, repeats.
-  const scanY = useSharedValue(-40);
-  // Pulse dot: opacity oscillates between 0.4 and 1.
-  const pulseOpacity = useSharedValue(1);
+
+  // Scanline sweep animation
+  const scanY = useRef(new Animated.Value(-40)).current;
+  // Pulse dot animation
+  const pulseOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Scanline sweep — runs indefinitely until unmount.
-    scanY.value = withRepeat(
-      withTiming(SCREEN_H, {
+    // Scanline: sweep from top to bottom, repeat forever
+    const scanAnim = Animated.loop(
+      Animated.timing(scanY, {
+        toValue: SCREEN_H,
         duration: SCANLINE_DURATION_MS,
         easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
       }),
-      -1, // infinite
-      false,
     );
-    // Reset to top on each cycle (jumpToStart handled by withRepeat internals).
+    scanAnim.start();
 
-    // Pulse dot — oscillates opacity.
-    pulseOpacity.value = withRepeat(
-      withSequence(
-        withTiming(0.35, { duration: PULSE_DURATION_MS }),
-        withTiming(1.0, { duration: PULSE_DURATION_MS }),
-      ),
-      -1,
-      false,
+    // Pulse: fade in/out forever
+    const pulseAnim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseOpacity, {
+          toValue: 0.35,
+          duration: PULSE_DURATION_MS,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseOpacity, {
+          toValue: 1,
+          duration: PULSE_DURATION_MS,
+          useNativeDriver: true,
+        }),
+      ]),
     );
+    pulseAnim.start();
 
     return () => {
-      cancelAnimation(scanY);
-      cancelAnimation(pulseOpacity);
+      scanAnim.stop();
+      pulseAnim.stop();
     };
   }, [scanY, pulseOpacity]);
-
-  const scanlineStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: scanY.value }],
-  }));
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    opacity: pulseOpacity.value,
-  }));
 
   const phaseLabel =
     phase === 'uploading'
@@ -124,29 +83,23 @@ export default function AnalysisLoadingScreen({
 
   return (
     <View style={styles.root}>
-      {/* ── Background image ── */}
       <Image source={{ uri: imageUri }} style={styles.bgImage} resizeMode="cover" />
-
-      {/* ── Dark vignette ── */}
       <View style={styles.vignette} pointerEvents="none" />
 
-      {/* ── Animated scanline ── */}
-      <Animated.View style={[styles.scanline, scanlineStyle]} pointerEvents="none">
-        {/* Core green line */}
+      {/* Scanline */}
+      <Animated.View
+        style={[styles.scanline, { transform: [{ translateY: scanY }] }]}
+        pointerEvents="none"
+      >
         <View style={styles.scanlineBar} />
-        {/* Soft glow below */}
         <View style={styles.scanlineGlow} />
       </Animated.View>
 
-      {/* ── Bottom status panel ── */}
+      {/* Bottom panel */}
       <View style={styles.panel}>
-        {/* Pulsing brand dot */}
-        <Animated.View style={[styles.pulseDot, pulseStyle]} />
-
+        <Animated.View style={[styles.pulseDot, { opacity: pulseOpacity }]} />
         <Text style={styles.primaryText}>{t('diagnosis.loading_primary')}</Text>
-
         <Text style={styles.kinyarwandaText}>{t('diagnosis.loading_sub')}</Text>
-
         <View style={styles.phaseRow}>
           <View style={styles.phaseIndicator} />
           <Text style={styles.phaseText}>{phaseLabel}</Text>
@@ -156,27 +109,11 @@ export default function AnalysisLoadingScreen({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  bgImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  vignette: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  // ── Scanline ─────────────────────────────────────────────────────────────
-  scanline: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-  },
+  root: { flex: 1, backgroundColor: '#000' },
+  bgImage: { ...StyleSheet.absoluteFillObject },
+  vignette: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
+  scanline: { position: 'absolute', left: 0, right: 0, top: 0 },
   scanlineBar: {
     height: 2.5,
     backgroundColor: Colors.accent,
@@ -186,12 +123,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  scanlineGlow: {
-    height: 36,
-    backgroundColor: Colors.accent,
-    opacity: 0.14,
-  },
-  // ── Bottom panel ──────────────────────────────────────────────────────────
+  scanlineGlow: { height: 36, backgroundColor: Colors.accent, opacity: 0.14 },
   panel: {
     position: 'absolute',
     bottom: 0,
@@ -233,11 +165,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 20,
   },
-  phaseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  phaseRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   phaseIndicator: {
     width: 8,
     height: 8,
