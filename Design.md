@@ -6,15 +6,36 @@ Skeleton of planned features. Fill in each section as the feature is built.
 
 ## 1. Scan
 
-**Status:** planned
+**Status:** in progress — `CameraScreen` built; diagnosis integration pending
 
 ### Description
 
-<!-- How the camera screen works, UX flow, image capture constraints -->
+The Scan tab is the primary entry point for crop-disease detection.
+
+**UX flow:**
+1. User opens the Scan tab → camera viewfinder fills the top portion of the screen.
+2. A leaf-alignment guide box (semi-transparent dimmed surround + Soft Leaf Green corner accents + label "Frame the affected leaf") helps the farmer centre the affected plant part.
+3. The farmer taps the large circular **"Scan Crop / Tanga Ifoto"** button. The button is elevated with a primary-green drop shadow and an accent-green outer ring.
+4. Alternatively, **"Upload from Gallery"** opens the system image picker (single image, 1:1 crop, 0.85 quality).
+5. Either path navigates to `/scan-result/[id]` with the image URI. The diagnosis screen owns the Gemini API call and Supabase write.
+6. A horizontal thumbnail strip below the controls shows the 5 most-recent scans from Supabase (via `useRecentScans`). Amber badge on scans that are `needs_review`. Tapping a thumbnail navigates to its result screen.
+
+**Permission handling:**
+- Camera permission is gated by `useCameraPermissions` from `expo-camera`.
+- Media-library permission is pre-requested on Android mount; iOS asks lazily.
+- If camera is denied, `PermissionPrompt` is shown with a re-request button.
+
+**Image capture constraints:**
+- Quality: 0.85 (JPEG).
+- Aspect ratio for gallery picker: 1:1.
+- No video; microphone permission is explicitly disabled in `app.json`.
 
 ### Key decisions
 
-<!-- -->
+- `CameraScreen.tsx` lives in `features/scan/` (not `app/`); the route file at `app/(tabs)/scan/index.tsx` is a one-line re-export. This keeps all business logic out of the router layer.
+- `useRecentScans` is a standalone hook so it can be reused on the History tab without prop-drilling.
+- Design tokens (colours) are imported from `config/colors.ts`; no raw hex strings in components.
+- Bilingual capture button label ("Scan Crop / Tanga Ifoto") is hardcoded for now; will be replaced with the i18n system once that feature is built.
 
 ---
 

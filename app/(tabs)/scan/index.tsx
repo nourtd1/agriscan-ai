@@ -1,9 +1,7 @@
-import { View, Text } from 'react-native';
+/**
+ * Route: (tabs)/scan
+ * Delegates entirely to the CameraScreen feature component.
+ */
+import CameraScreen from '../../../features/scan/CameraScreen';
 
-export default function ScanScreen() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Scan</Text>
-    </View>
-  );
-}
+export default CameraScreen;

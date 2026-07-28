@@ -5,8 +5,10 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",
     "expo": "~57.0.8",
+    "expo-camera": "~57.0.3",
     "expo-constants": "~57.0.7",
     "expo-font": "~57.0.1",
+    "expo-image-picker": "~57.0.6",
     "expo-linking": "~57.0.4",
     "expo-router": "~57.0.8",
     "expo-splash-screen": "~57.0.5",
