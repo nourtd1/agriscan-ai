@@ -1,9 +1,6 @@
 /**
  * Tabs layout — defines the bottom tab bar and per-screen header options.
- *
- * The LanguageSelector pill strip is placed in `headerRight` on every tab
- * so the user can switch locale from anywhere in the app without navigating
- * to the profile screen.
+ * Route names use the Expo Router v6 convention: "scan/index" not "scan".
  */
 
 import React from 'react';
@@ -13,9 +10,6 @@ import { Colors } from '../../config/colors';
 import LanguageSelector from '../../features/i18n/LanguageSelector';
 import { useLocale } from '../../features/i18n/LocaleContext';
 
-/**
- * Shared `headerRight` component — renders the compact language selector pill.
- */
 function HeaderLanguageSelector() {
   return (
     <View style={{ marginRight: 12 }}>
@@ -24,9 +18,6 @@ function HeaderLanguageSelector() {
   );
 }
 
-/**
- * Tab navigator with AgriScan AI design tokens applied to the tab bar.
- */
 export default function TabLayout() {
   const { t } = useLocale();
 
@@ -45,18 +36,18 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="scan"
+        name="scan/index"
         options={{ title: t('scan.title') }}
       />
       <Tabs.Screen
-        name="history"
+        name="history/index"
         options={{ title: t('history.title') }}
       />
       <Tabs.Screen
-        name="profile"
+        name="profile/index"
         options={{ title: t('profile.title') }}
       />
-      {/* Hide legacy template screens from the tab bar */}
+      {/* Hide legacy template screens */}
       <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen name="two" options={{ href: null }} />
     </Tabs>
