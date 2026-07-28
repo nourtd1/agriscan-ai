@@ -29,18 +29,12 @@ import { SUPPORTED_LOCALES, LOCALE_LABELS, type LocaleCode } from './i18n';
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface LanguageSelectorProps {
-  /** When true renders a more compact version for header placement. */
   compact?: boolean;
+  /** When true, renders with white/transparent styles for dark backgrounds. */
+  onDark?: boolean;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-/**
- * Renders a pill-strip language selector wired to the active locale context.
- *
- * @param compact - Reduce padding for header placement (default: false).
- */
-export default function LanguageSelector({ compact = false }: LanguageSelectorProps) {
+export default function LanguageSelector({ compact = false, onDark = false }: LanguageSelectorProps) {
   const { locale, setLocale } = useLocale();
 
   return (
@@ -54,7 +48,9 @@ export default function LanguageSelector({ compact = false }: LanguageSelectorPr
             style={({ pressed }) => [
               styles.pill,
               compact && styles.pillCompact,
-              active ? styles.pillActive : styles.pillInactive,
+              active
+                ? (onDark ? styles.pillActiveDark : styles.pillActive)
+                : (onDark ? styles.pillInactiveDark : styles.pillInactive),
               pressed && styles.pillPressed,
             ]}
             accessibilityLabel={`Switch language to ${LOCALE_LABELS[code]}`}
@@ -65,7 +61,9 @@ export default function LanguageSelector({ compact = false }: LanguageSelectorPr
               style={[
                 styles.pillText,
                 compact && styles.pillTextCompact,
-                active ? styles.pillTextActive : styles.pillTextInactive,
+                active
+                  ? (onDark ? styles.pillTextActiveDark : styles.pillTextActive)
+                  : (onDark ? styles.pillTextInactiveDark : styles.pillTextInactive),
               ]}
             >
               {LOCALE_LABELS[code]}
@@ -103,9 +101,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
+  pillActiveDark: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderColor: 'rgba(255,255,255,0.95)',
+  },
   pillInactive: {
     backgroundColor: 'transparent',
     borderColor: Colors.accent,
+  },
+  pillInactiveDark: {
+    backgroundColor: 'transparent',
+    borderColor: 'rgba(255,255,255,0.45)',
   },
   pillPressed: {
     opacity: 0.7,
@@ -124,5 +130,11 @@ const styles = StyleSheet.create({
   },
   pillTextInactive: {
     color: Colors.primary,
+  },
+  pillTextActiveDark: {
+    color: Colors.primary,
+  },
+  pillTextInactiveDark: {
+    color: 'rgba(255,255,255,0.75)',
   },
 });
