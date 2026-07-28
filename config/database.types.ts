@@ -3,6 +3,7 @@
 
 export type ScanStatus = 'pending' | 'diagnosed' | 'needs_review' | 'verified' | 'rejected';
 export type ReviewStatus = 'pending' | 'in_progress' | 'approved' | 'rejected';
+export type Severity = 'low' | 'medium' | 'high';
 
 export interface Database {
   public: {
@@ -33,6 +34,8 @@ export interface Database {
           crop_type: string | null;
           diagnosis: string | null;
           confidence: number | null;
+          treatment_steps: string[];
+          severity: Severity | null;
           status: ScanStatus;
           created_at: string;
         };
@@ -43,6 +46,8 @@ export interface Database {
           crop_type?: string | null;
           diagnosis?: string | null;
           confidence?: number | null;
+          treatment_steps?: string[];
+          severity?: Severity | null;
           status?: ScanStatus;
           created_at?: string;
         };
@@ -51,6 +56,8 @@ export interface Database {
           crop_type?: string | null;
           diagnosis?: string | null;
           confidence?: number | null;
+          treatment_steps?: string[];
+          severity?: Severity | null;
           status?: ScanStatus;
         };
       };
@@ -85,6 +92,7 @@ export interface Database {
     Enums: {
       scan_status: ScanStatus;
       review_status: ReviewStatus;
+      severity: Severity;
     };
   };
 }

@@ -41,15 +41,76 @@ The Scan tab is the primary entry point for crop-disease detection.
 
 ## 2. Diagnosis
 
-**Status:** planned
+**Status:** in progress — `analyze-crop` Edge Function built; mobile integration (scan-result screen) pending
 
 ### Description
 
-<!-- Gemini API call flow, prompt structure, response schema -->
+Diagnosis is handled entirely server-side by the `analyze-crop` Supabase Edge Function. The mobile app never touches the Gemini API or the API key directly.
+
+**Request flow:**
+
+```
+Mobile app (CameraScreen)
+  │
+  │  POST /functions/v1/analyze-crop
+  │  Authorization: Bearer <user-JWT>
+  │  Content-Type: multipart/form-data
+  │  Fields: image (File), scan_id (UUID)
+  │
+  ▼
+analyze-crop Edge Function (Deno)
+  1. Validates JWT → identifies user
+  2. Verifies scan.user_id == user.id and scan.status == "pending"
+  3. Calls Gemini vision API (model: gemini-3.1-pro) with structured prompt
+     ├── Retries up to 3× on 503 / RESOURCE_EXHAUSTED with exponential back-off
+     └── Strips base64/binary from all log lines
+  4. Validates strict JSON schema: { disease, confidence, treatment_steps, severity }
+  5. Writes result to scans table (admin client bypasses RLS for the update)
+  6. If confidence < 0.75 → sets status = "needs_review" and creates an
+     agronomist_reviews row (district copied from users.district)
+     Else → sets status = "diagnosed"
+  7. Returns the diagnosis JSON to the caller
+```
+
+**Gemini prompt (abbreviated):**
+> "You are an expert agronomist. Respond with ONLY a valid JSON object. Schema: `{disease: string, confidence: number [0,1], treatment_steps: string[], severity: 'low'|'medium'|'high'}`."
+
+**Temperature:** 0.1 (deterministic factual output).
+**Max output tokens:** 512.
+**Response MIME type hint:** `application/json`.
+
+**Retry policy:**
+- Retryable conditions: HTTP 503, Gemini status `RESOURCE_EXHAUSTED` or `UNAVAILABLE`.
+- Back-off: `1s × 2^(attempt-1) ± 200ms jitter`, up to 3 attempts.
+- All other errors are thrown immediately (no retry).
+
+**Logging (info level, JSON to stdout):**
+- `gemini_call_start`: attempt number, model, prompt text, generation config, image MIME type, image size in bytes.
+- `gemini_call_end`: attempt, model, HTTP status, parsed response object.
+- `gemini_retry`: attempt, delay until next attempt, retry reason.
+- `diagnosis_complete`: scan ID, disease, confidence, severity, step count.
+- `review_row_created` / `review_row_insert_failed`: scan ID, district.
+- `db_update_failed` / `gemini_failed`: error message.
+- Binary scrubbing: any field starting with `"data:"`, any key matching `/base64/i` or `/inline.?data/i`, and strings longer than 4096 chars are replaced with `"[binary removed]"` or `"[truncated, N chars]"` before logging.
+
+**File layout:**
+```
+supabase/functions/
+  _shared/
+    models.ts    — GEMINI_MODEL + getApiKey() (Deno-compatible mirror of config/models.ts)
+    cors.ts      — shared CORS headers
+    logger.ts    — structured JSON logger with binary scrubbing
+  analyze-crop/
+    index.ts     — request handler, Gemini call, DB write
+```
 
 ### Key decisions
 
-<!-- -->
+- **API key never leaves the server.** `getApiKey()` in `_shared/models.ts` calls `Deno.env.get("GEMINI_API_KEY")`. The mobile app has no reference to the key whatsoever.
+- **`_shared/models.ts` mirrors `config/models.ts`.** Edge Functions run Deno, not Node, so `process.env` is unavailable. Two separate files share the same model-name constant; both must be updated in sync when the model changes.
+- **Service-role client for DB writes.** The function verifies JWT ownership first, then uses the service-role client to write the diagnosis — this is necessary because RLS only allows the user to update their own rows, but the function runs in a server context without the user's session cookie.
+- **`needs_review` row created atomically.** If confidence < 0.75, the agronomist review row is inserted in the same function invocation. Failure is non-fatal (logged as warn); the scan is still marked `needs_review`.
+- **`verify_jwt = true` in `config.toml`.** Unauthenticated calls are rejected at the Edge Function gateway level before our code runs.
 
 ---
 
@@ -145,7 +206,9 @@ Core entity — one row per photo submitted by a farmer.
 | `image_url` | `text` | Supabase Storage URL of the uploaded photo |
 | `crop_type` | `text` | Detected or user-supplied crop name |
 | `diagnosis` | `text` | Gemini's disease/pest diagnosis text |
-| `confidence` | `numeric(5,4)` | Gemini confidence in [0, 1]; values below threshold trigger `needs_review` |
+| `confidence` | `numeric(5,4)` | Gemini confidence in [0, 1]; values below 0.75 trigger `needs_review` |
+| `treatment_steps` | `text[]` | Ordered list of remediation steps returned by Gemini |
+| `severity` | `text` | `low` / `medium` / `high`; null until analysed |
 | `status` | `scan_status` enum | `pending → diagnosed → needs_review → verified / rejected` |
 | `created_at` | `timestamptz` | |
 
