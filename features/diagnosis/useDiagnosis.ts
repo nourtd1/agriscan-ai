@@ -80,12 +80,13 @@ export function useDiagnosis(imageUri: string | null): UseDiagnosisResult {
       const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
       const storagePath = `${user.id}/${Date.now()}.${ext}`;
 
+      // React Native: fetch the local file as ArrayBuffer for Supabase Storage upload.
       const response = await fetch(uri);
-      const blob = await response.blob();
+      const arrayBuffer = await response.arrayBuffer();
 
       const { error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKET)
-        .upload(storagePath, blob, { contentType: mimeType, upsert: false });
+        .upload(storagePath, arrayBuffer, { contentType: mimeType, upsert: false });
 
       if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
 
@@ -110,9 +111,8 @@ export function useDiagnosis(imageUri: string | null): UseDiagnosisResult {
 
       const formData = new FormData();
       formData.append('scan_id', scanRow.id);
-      // Re-fetch the file as a Blob with the correct name for multipart upload.
-      const imageBlob = await fetch(uri).then(r => r.blob());
-      formData.append('image', new File([imageBlob], `crop.${ext}`, { type: mimeType }));
+      // React Native FormData accepts { uri, name, type } directly — no File constructor needed.
+      formData.append('image', { uri, name: `crop.${ext}`, type: mimeType } as any);
 
       const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
       const fnResponse = await fetch(
