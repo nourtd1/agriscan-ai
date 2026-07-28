@@ -29,8 +29,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "AgriScan needs camera access to photograph your crops.",
-          "microphonePermission": false
+          "cameraPermission": "AgriScan needs camera access to photograph your crops."
         }
       ],
       [

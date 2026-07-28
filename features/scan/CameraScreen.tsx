@@ -42,7 +42,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Camera, CameraType } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -157,8 +157,8 @@ export default function CameraScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useLocale();
-  const cameraRef = useRef<CameraView>(null);
-  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<Camera>(null);
+  const [permission, requestPermission] = Camera.useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
   const { scans, loading: scansLoading, refresh: refreshScans } = useRecentScans();
 
@@ -199,7 +199,7 @@ export default function CameraScreen() {
    */
   const pickFromGallery = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.85,
@@ -244,7 +244,7 @@ export default function CameraScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* ── Viewfinder ── */}
       <View style={styles.viewfinderContainer}>
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+        <Camera ref={cameraRef} style={StyleSheet.absoluteFill} type={CameraType.back} />
         <GuideBox label={t('scan.guide_label')} />
       </View>
 
