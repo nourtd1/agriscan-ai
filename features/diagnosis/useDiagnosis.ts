@@ -68,7 +68,10 @@ export function useDiagnosis(imageUri: string | null): UseDiagnosisResult {
     try {
       // ── 1. Get authenticated user ──────────────────────────────────────
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw new Error('Not authenticated.');
+      if (userError || !user) throw new Error('Not authenticated. Please sign in.');
+
+      // Ensure a users profile row exists (needed for RLS on scans table).
+      await supabase.from('users').upsert({ id: user.id }, { onConflict: 'id' });
 
       // ── 2. Upload image to Storage ────────────────────────────────────
       setPhase('uploading');
