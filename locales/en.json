@@ -10,11 +10,59 @@
   },
   "history": {
     "title": "History",
-    "empty": "No scans yet"
+    "empty": "No scans yet",
+    "empty_sub": "Your scan history will appear here.",
+    "filter_all": "All",
+    "filter_healthy": "Healthy",
+    "filter_needs_review": "Needs Review",
+    "filter_verified": "Verified",
+    "status_pending": "Pending",
+    "status_diagnosed": "Diagnosed",
+    "status_needs_review": "Needs Review",
+    "status_verified": "Verified",
+    "status_rejected": "Rejected",
+    "date_label": "Scanned"
   },
   "profile": {
     "title": "Profile",
-    "language": "Language"
+    "language": "Language",
+    "language_desc": "Choose the language for the app and voice readout.",
+    "district": "District",
+    "district_placeholder": "Enter your district",
+    "signed_in_as": "Signed in as",
+    "sign_out": "Sign Out",
+    "version": "Version"
+  },
+  "onboarding": {
+    "welcome_title": "AgriScan AI",
+    "welcome_subtitle": "Diagnose crop diseases instantly with AI — verified by local agronomists.",
+    "welcome_sub_rw": "Menya indwara z'ibimera byawe vuba ukoresheje AI.",
+    "get_started": "Get Started",
+    "language_title": "Choose Your Language",
+    "language_subtitle": "Select the language you're most comfortable with.",
+    "language_continue": "Continue",
+    "permission_title": "Camera Access",
+    "permission_body": "AgriScan needs your camera to photograph crops for AI diagnosis.",
+    "permission_body_rw": "AgriScan ikeneye kamera yawe gufotora ibimera kugira ngo isesengure.",
+    "permission_grant": "Allow Camera Access",
+    "permission_skip": "Skip for now",
+    "permission_denied_title": "Camera permission denied",
+    "permission_denied_body": "You can enable camera access in your device Settings.",
+    "open_settings": "Open Settings"
+  },
+  "ethics": {
+    "section_title": "Ethical AI & Human Verification",
+    "banner": "AI predictions require human verification for severe cases",
+    "banner_sub": "Ibisubizo bya AI bisaba kugenzurwa n'inzobere y'ubuhinzi.",
+    "send_button": "Send to Local District Agronomist for Verification",
+    "status_pending": "Pending Agronomist Review",
+    "status_pending_sub": "A local agronomist has been notified and will review your scan.",
+    "status_reviewed": "Verified by Agronomist",
+    "status_reviewed_sub": "This scan has been reviewed and verified by a local agronomist.",
+    "already_sent": "Already sent for review.",
+    "send_failed": "Failed to submit. Please check your connection.",
+    "why_title": "Why human verification?",
+    "why_body": "AI models can make mistakes. For high-severity cases, a trained agronomist confirms the diagnosis before you act on it."
   },
   "diagnosis": {
     "loading_primary": "Analyzing plant health with Gemini Vision AI…",
@@ -45,10 +93,10 @@
     "send_failed": "Failed to send. Please check your connection and try again."
   },
   "language": {
-    "en": "EN",
-    "rw": "RW",
-    "sw": "SW",
-    "fr": "FR"
+    "en": "English",
+    "rw": "Kinyarwanda",
+    "sw": "Kiswahili",
+    "fr": "Français"
   },
   "tts": {
     "not_supported": "Text-to-speech is not supported on this device.",
@@ -57,6 +105,8 @@
   "common": {
     "error_title": "Analysis failed",
     "error_load": "Could not load scan",
-    "missing_uri": "Missing image URI"
+    "missing_uri": "Missing image URI",
+    "loading": "Loading…",
+    "retry": "Retry"
   }
 }

@@ -10,11 +10,59 @@
   },
   "history": {
     "title": "Historique",
-    "empty": "Aucun scan pour l'instant"
+    "empty": "Aucun scan pour l'instant",
+    "empty_sub": "Votre historique de scans apparaîtra ici.",
+    "filter_all": "Tout",
+    "filter_healthy": "Sain",
+    "filter_needs_review": "À vérifier",
+    "filter_verified": "Vérifié",
+    "status_pending": "En attente",
+    "status_diagnosed": "Diagnostiqué",
+    "status_needs_review": "À vérifier",
+    "status_verified": "Vérifié",
+    "status_rejected": "Rejeté",
+    "date_label": "Scanné"
   },
   "profile": {
     "title": "Profil",
-    "language": "Langue"
+    "language": "Langue",
+    "language_desc": "Choisissez la langue de l'application et de la lecture vocale.",
+    "district": "District",
+    "district_placeholder": "Entrez votre district",
+    "signed_in_as": "Connecté en tant que",
+    "sign_out": "Se déconnecter",
+    "version": "Version"
+  },
+  "onboarding": {
+    "welcome_title": "AgriScan AI",
+    "welcome_subtitle": "Diagnostiquez les maladies des cultures instantanément avec l'IA — vérifiées par des agronomes locaux.",
+    "welcome_sub_rw": "Menya indwara z'ibimera byawe vuba ukoresheje AI.",
+    "get_started": "Commencer",
+    "language_title": "Choisissez Votre Langue",
+    "language_subtitle": "Sélectionnez la langue avec laquelle vous êtes le plus à l'aise.",
+    "language_continue": "Continuer",
+    "permission_title": "Accès à la Caméra",
+    "permission_body": "AgriScan a besoin de votre caméra pour photographier les cultures pour le diagnostic IA.",
+    "permission_body_rw": "AgriScan ikeneye kamera yawe gufotora ibimera kugira ngo isesengure.",
+    "permission_grant": "Autoriser la Caméra",
+    "permission_skip": "Ignorer pour l'instant",
+    "permission_denied_title": "Permission de caméra refusée",
+    "permission_denied_body": "Vous pouvez activer l'accès à la caméra dans les Paramètres de votre appareil.",
+    "open_settings": "Ouvrir les Paramètres"
+  },
+  "ethics": {
+    "section_title": "IA Éthique & Vérification Humaine",
+    "banner": "Les prédictions de l'IA nécessitent une vérification humaine pour les cas graves",
+    "banner_sub": "Ibisubizo bya AI bisaba kugenzurwa n'inzobere y'ubuhinzi.",
+    "send_button": "Envoyer à l'Agronome du District pour Vérification",
+    "status_pending": "En attente de l'examen de l'Agronome",
+    "status_pending_sub": "Un agronome local a été notifié et examinera votre scan.",
+    "status_reviewed": "Vérifié par l'Agronome",
+    "status_reviewed_sub": "Ce scan a été examiné et vérifié par un agronome local.",
+    "already_sent": "Déjà envoyé pour vérification.",
+    "send_failed": "Échec de l'envoi. Vérifiez votre connexion.",
+    "why_title": "Pourquoi la vérification humaine ?",
+    "why_body": "Les modèles d'IA peuvent faire des erreurs. Pour les cas graves, un agronome formé confirme le diagnostic avant que vous n'agissiez."
   },
   "diagnosis": {
     "loading_primary": "Analyse de la santé des plantes avec Gemini Vision AI…",
@@ -45,10 +93,10 @@
     "send_failed": "Échec de l'envoi. Vérifiez votre connexion et réessayez."
   },
   "language": {
-    "en": "EN",
-    "rw": "RW",
-    "sw": "SW",
-    "fr": "FR"
+    "en": "English",
+    "rw": "Kinyarwanda",
+    "sw": "Kiswahili",
+    "fr": "Français"
   },
   "tts": {
     "not_supported": "La synthèse vocale n'est pas prise en charge sur cet appareil.",
@@ -57,6 +105,8 @@
   "common": {
     "error_title": "Analyse échouée",
     "error_load": "Impossible de charger le scan",
-    "missing_uri": "URI d'image manquante"
+    "missing_uri": "URI d'image manquante",
+    "loading": "Chargement…",
+    "retry": "Réessayer"
   }
 }

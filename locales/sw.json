@@ -10,11 +10,59 @@
   },
   "history": {
     "title": "Historia",
-    "empty": "Hakuna skana bado"
+    "empty": "Hakuna skana bado",
+    "empty_sub": "Historia yako ya skana itaonekana hapa.",
+    "filter_all": "Zote",
+    "filter_healthy": "Nzima",
+    "filter_needs_review": "Inahitaji Ukaguzi",
+    "filter_verified": "Imethibitishwa",
+    "status_pending": "Inasubiriwa",
+    "status_diagnosed": "Imetambuliwa",
+    "status_needs_review": "Inahitaji Ukaguzi",
+    "status_verified": "Imethibitishwa",
+    "status_rejected": "Imekataliwa",
+    "date_label": "Ilipigwa"
   },
   "profile": {
     "title": "Wasifu",
-    "language": "Lugha"
+    "language": "Lugha",
+    "language_desc": "Chagua lugha ya programu na sauti.",
+    "district": "Wilaya",
+    "district_placeholder": "Weka wilaya yako",
+    "signed_in_as": "Umeingia kama",
+    "sign_out": "Toka",
+    "version": "Toleo"
+  },
+  "onboarding": {
+    "welcome_title": "AgriScan AI",
+    "welcome_subtitle": "Tambua magonjwa ya mazao mara moja kwa AI — imethibitishwa na wataalamu wa kilimo.",
+    "welcome_sub_rw": "Menya indwara z'ibimera byawe vuba ukoresheje AI.",
+    "get_started": "Anza",
+    "language_title": "Chagua Lugha Yako",
+    "language_subtitle": "Chagua lugha unayopendelea zaidi.",
+    "language_continue": "Endelea",
+    "permission_title": "Ruhusa ya Kamera",
+    "permission_body": "AgriScan inahitaji kamera yako kupiga picha za mazao kwa utambuzi wa AI.",
+    "permission_body_rw": "AgriScan ikeneye kamera yawe gufotora ibimera kugira ngo isesengure.",
+    "permission_grant": "Ruhusu Kamera",
+    "permission_skip": "Ruka kwa sasa",
+    "permission_denied_title": "Ruhusa ya kamera imekataliwa",
+    "permission_denied_body": "Unaweza kuwezesha ruhusa ya kamera katika Mipangilio ya kifaa chako.",
+    "open_settings": "Fungua Mipangilio"
+  },
+  "ethics": {
+    "section_title": "AI ya Kimaadili & Uthibitishaji wa Binadamu",
+    "banner": "Utabiri wa AI unahitaji uthibitishaji wa binadamu kwa kesi kali",
+    "banner_sub": "Ibisubizo bya AI bisaba kugenzurwa n'inzobere y'ubuhinzi.",
+    "send_button": "Tuma kwa Mtaalamu wa Kilimo wa Wilaya kwa Uthibitishaji",
+    "status_pending": "Inasubiri Ukaguzi wa Mtaalamu",
+    "status_pending_sub": "Mtaalamu wa kilimo amearifiwa na atakagua skana yako.",
+    "status_reviewed": "Imethibitishwa na Mtaalamu",
+    "status_reviewed_sub": "Skana hii imekaguliwa na kuthibitishwa na mtaalamu wa kilimo.",
+    "already_sent": "Tayari imetumwa kwa ukaguzi.",
+    "send_failed": "Imeshindwa kutuma. Tafadhali angalia muunganisho wako.",
+    "why_title": "Kwa nini uthibitishaji wa binadamu?",
+    "why_body": "Mifano ya AI inaweza kufanya makosa. Kwa kesi kali, mtaalamu aliyefunzwa anathibitisha utambuzi kabla ya kutenda."
   },
   "diagnosis": {
     "loading_primary": "Inachambua afya ya mmea kwa kutumia Gemini Vision AI…",
@@ -45,10 +93,10 @@
     "send_failed": "Imeshindwa kutuma. Tafadhali angalia muunganisho wako na ujaribu tena."
   },
   "language": {
-    "en": "EN",
-    "rw": "RW",
-    "sw": "SW",
-    "fr": "FR"
+    "en": "English",
+    "rw": "Kinyarwanda",
+    "sw": "Kiswahili",
+    "fr": "Français"
   },
   "tts": {
     "not_supported": "Usemi wa maandishi haukuungwa mkono kwenye kifaa hiki.",
@@ -57,6 +105,8 @@
   "common": {
     "error_title": "Uchambuzi umeshindwa",
     "error_load": "Imeshindwa kupakia skana",
-    "missing_uri": "URI ya picha haipo"
+    "missing_uri": "URI ya picha haipo",
+    "loading": "Inapakia…",
+    "retry": "Jaribu Tena"
   }
 }

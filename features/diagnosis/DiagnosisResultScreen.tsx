@@ -43,6 +43,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../config/colors';
 import { useLocale } from '../i18n/LocaleContext';
 import { useTTS } from '../tts/useTTS';
+import EthicsVerificationSection from './EthicsVerificationSection';
 import type { DiagnosisData } from './useDiagnosis';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -234,6 +235,15 @@ export default function DiagnosisResultScreen({
         {/* ── Treatment steps ── */}
         <View style={styles.section}>
           <TreatmentStepsCard steps={data.treatment_steps} />
+        </View>
+
+        {/* ── Ethical AI & Human Verification ── */}
+        <View style={styles.section}>
+          <EthicsVerificationSection
+            scanId={data.scanId}
+            currentStatus={data.status}
+            severity={data.severity}
+          />
         </View>
 
         {/* ── Scan again button ── */}

@@ -10,11 +10,59 @@
   },
   "history": {
     "title": "Amateka",
-    "empty": "Nta foto nawe"
+    "empty": "Nta foto nawe",
+    "empty_sub": "Amateka y'amafoto yawe azagaragara hano.",
+    "filter_all": "Yose",
+    "filter_healthy": "Mzima",
+    "filter_needs_review": "Bisaba Isuzuma",
+    "filter_verified": "Byemejwe",
+    "status_pending": "Bitegereje",
+    "status_diagnosed": "Byasuzumwe",
+    "status_needs_review": "Bisaba Isuzuma",
+    "status_verified": "Byemejwe",
+    "status_rejected": "Byanzwe",
+    "date_label": "Bifotowe"
   },
   "profile": {
     "title": "Umwirondoro",
-    "language": "Ururimi"
+    "language": "Ururimi",
+    "language_desc": "Hitamo ururimi rw'igikorwa n'ijwi.",
+    "district": "Akarere",
+    "district_placeholder": "Shyira akarere kawe",
+    "signed_in_as": "Winjiye nka",
+    "sign_out": "Sohoka",
+    "version": "Verisiyo"
+  },
+  "onboarding": {
+    "welcome_title": "AgriScan AI",
+    "welcome_subtitle": "Menya indwara z'ibimera byawe vuba ukoresheje AI — byemezwa n'inzobere y'ubuhinzi.",
+    "welcome_sub_rw": "Diagnose crop diseases instantly with AI.",
+    "get_started": "Tangira",
+    "language_title": "Hitamo Ururimi Rwawe",
+    "language_subtitle": "Hitamo ururimi ukoresha neza.",
+    "language_continue": "Komeza",
+    "permission_title": "Uburenganzira bwa Kamera",
+    "permission_body": "AgriScan ikeneye kamera yawe gufotora ibimera kugira ngo isesengure.",
+    "permission_body_rw": "AgriScan needs your camera to photograph crops for AI diagnosis.",
+    "permission_grant": "Emera Kamera",
+    "permission_skip": "Simbuka ubu",
+    "permission_denied_title": "Uburenganzira bw'ikamera bwanzwe",
+    "permission_denied_body": "Ushobora gufungura uburenganzira bw'ikamera mu igenamiterere.",
+    "open_settings": "Fungura Igenamiterere"
+  },
+  "ethics": {
+    "section_title": "Ubushimusi bw'AI & Kugenzurwa n'Inzobere",
+    "banner": "Ibisubizo bya AI bisaba kugenzurwa n'inzobere y'ubuhinzi",
+    "banner_sub": "AI predictions require human verification for severe cases.",
+    "send_button": "Ohereza Inzobere y'Ubuhinzi y'Akarere Kugenzura",
+    "status_pending": "Bitegereje Isuzuma ry'Inzobere",
+    "status_pending_sub": "Inzobere y'ubuhinzi yabimenyeshejwe kandi izasuzuma ifoto yawe.",
+    "status_reviewed": "Byemejwe n'Inzobere",
+    "status_reviewed_sub": "Iki gisuzumwe kandi cyemejwe n'inzobere y'ubuhinzi.",
+    "already_sent": "Byoherejwe kugenzurwa.",
+    "send_failed": "Byanze koherezwa. Reba umuyoboro w'internet.",
+    "why_title": "Kubera iki bagenzura?",
+    "why_body": "AI ishobora gukora amakosa. Ku bibazo bikomeye, inzobere y'ubuhinzi iremeza ubusobanuro mbere y'uko ugira ibikorwa."
   },
   "diagnosis": {
     "loading_primary": "Tugenzura ubuzima bw'ibimera bakoresheje Gemini Vision AI…",
@@ -45,10 +93,10 @@
     "send_failed": "Byanze koherezwa. Reba umuyoboro w'internet ukongere ugerageze."
   },
   "language": {
-    "en": "EN",
-    "rw": "RW",
-    "sw": "SW",
-    "fr": "FR"
+    "en": "Icyongereza",
+    "rw": "Ikinyarwanda",
+    "sw": "Kiswahili",
+    "fr": "Igifaransa"
   },
   "tts": {
     "not_supported": "Ubu buryo ntibushyirwa mu ngiro kuri iki gikoresho.",
@@ -57,6 +105,8 @@
   "common": {
     "error_title": "Isesengura ryanze",
     "error_load": "Kugeraho ifoto byanze",
-    "missing_uri": "Inzira y'ifoto ibura"
+    "missing_uri": "Inzira y'ifoto ibura",
+    "loading": "Gutegereza…",
+    "retry": "Ongera Ugerageze"
   }
 }

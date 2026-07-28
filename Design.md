@@ -208,29 +208,85 @@ is shown.
 
 ## 3. Human Verification
 
-**Status:** planned
+**Status:** complete — ethics section on result screen + onboarding + history + profile built
 
 ### Description
 
-<!-- When AI confidence is low, how the result is queued for expert review; status polling; notification -->
+Human verification is integrated at two levels:
+
+**Level 1 — Automatic server-side routing (Edge Function)**
+Scans with confidence < 0.75 automatically get an `agronomist_reviews` row created and status set to `needs_review`. The farmer doesn't need to do anything.
+
+**Level 2 — Voluntary farmer-initiated escalation (EthicsVerificationSection)**
+Every result screen (confidence ≥ 0.60) shows an "Ethical AI & Human Verification" section below the treatment steps card. This gives the farmer agency to request human review even for high-confidence results.
+
+**`EthicsVerificationSection` component** (`features/diagnosis/EthicsVerificationSection.tsx`):
+
+| State | What is shown |
+|---|---|
+| `idle` | Banner + "Why human verification?" box + "Send to Local District Agronomist" button |
+| `sending` | Button replaced with activity indicator |
+| `pending` | Status card: amber dot + "Pending Agronomist Review" + sub-copy |
+| `reviewed` | Status card: green dot + "Verified by Agronomist" |
+| `error` | Inline error text with implicit retry (re-tap button) |
+
+The banner border colour escalates with severity: amber for low/medium, red for high. This makes the nudge more prominent on the cases where human verification matters most.
+
+**Supabase writes on send:**
+1. `scans.status` → `"needs_review"`
+2. `agronomist_reviews` INSERT with user's district
+
+**Why inline, not a separate screen:** Requiring navigation to a dedicated "request review" screen would mean most farmers never use it. Inline placement guarantees every farmer sees the option without extra steps.
 
 ### Key decisions
 
-<!-- -->
+- **`EthicsVerificationSection` derives its initial state from `currentStatus` prop.** When navigating to an existing scan that is already `needs_review` or `verified`, the correct state card is shown immediately without any extra fetch.
+- **The "Why human verification?" explanation is always visible, not collapsed.** Transparency about AI limitations is the point; hiding it behind a disclosure would undermine the message.
+- **TTS has no "Listen" button on `LowConfidenceScreen`.** Reading withheld content aloud would defeat the safety gate.
 
 ---
 
 ## 4. History
 
-**Status:** planned
+**Status:** complete
 
 ### Description
 
-<!-- Local persistence (AsyncStorage / SQLite), list view, detail view, deletion -->
+**File layout:**
+```
+features/history/
+  useHistory.ts      — data hook: fetch all scans, client-side filter
+  HistoryScreen.tsx  — filterable list UI
+app/(tabs)/history/index.tsx — re-export
+```
+
+**Filter tabs** (horizontal pill strip at top):
+
+| Tab | Filter logic |
+|---|---|
+| All | All statuses |
+| Healthy | `status == "diagnosed"` AND `diagnosis == "healthy"` |
+| Needs Review | `status in ["needs_review", "pending"]` |
+| Verified | `status == "verified"` |
+
+Filtering is client-side — all scans are fetched once and filtered in JS. This avoids multiple round-trips and allows instant tab switching.
+
+**Scan card layout:**
+- 72×72 thumbnail (crop photo) with a severity colour dot overlay
+- Disease name (or status label if not yet diagnosed)
+- Status badge: coloured dot + label (Pending / Diagnosed / Needs Review / Verified / Rejected)
+- Date scanned
+- Chevron → taps navigate to `/scan-result/<id>`
+
+**Pull-to-refresh** wired to `useHistory.refresh()`.
+
+**Empty state:** leaf emoji + bilingual copy when no scans match the active filter.
 
 ### Key decisions
 
-<!-- -->
+- **No local SQLite/AsyncStorage.** All history data lives in Supabase. This keeps the data model simple and ensures consistency across devices. Offline support is a future iteration.
+- **Client-side filtering.** For the expected volume (tens to low hundreds of scans per user), fetching all rows and filtering in JS is faster than multiple DB queries with different WHERE clauses.
+- **`useRecentScans` (camera screen) and `useHistory` are separate hooks.** They have different shapes (recent = 5 items, history = all + filters). Merging them would add complexity for no benefit.
 
 ---
 
@@ -326,6 +382,75 @@ The phonetic fallback for Kinyarwanda is an acceptable degradation. The text is 
 - **Rate 0.92.** Slightly slower than the system default (1.0) for clarity in field conditions (outdoor ambient noise, non-native speakers).
 - **Script is built from i18n templates.** The `tts.intro` key in each locale file controls the spoken structure. Changing the script format for one language does not require touching the hook code.
 - **TTS button is inside `DiagnosisResultScreen`, not the route controller.** The low-confidence screen deliberately has no TTS button — reading a withheld diagnosis aloud would defeat the safety gate.
+
+---
+
+## 7. Onboarding
+
+**Status:** complete
+
+### Description
+
+Three-screen linear flow: Welcome → Language → Camera Permission.
+
+```
+app/(onboarding)/
+  index.tsx       → WelcomeScreen
+  language.tsx    → LanguageSelectScreen
+  permission.tsx  → CameraPermissionScreen
+
+features/onboarding/
+  WelcomeScreen.tsx
+  LanguageSelectScreen.tsx
+  CameraPermissionScreen.tsx
+```
+
+**WelcomeScreen**
+- Deep emerald green full-screen background.
+- Large 🌿 logo circle with frosted border.
+- Bilingual subtitle: English primary + Kinyarwanda secondary.
+- Decorative leaf emoji row.
+- Accent-green "Get Started" button → navigates to language screen.
+
+**LanguageSelectScreen**
+- Large-target language cards (full row, not compact pills) — critical for low-literacy farmers who identify their language by flag + autonym rather than a 2-letter code.
+- Each card: flag emoji + autonym (name in that language) + English name + check mark when selected.
+- "Continue" button calls `setLocale(selected)` then navigates to permission screen.
+
+**CameraPermissionScreen**
+- Camera + leaf illustration.
+- Explains why camera is needed (bilingual: English + Kinyarwanda).
+- "Allow Camera Access" → `requestPermission()` → on grant, `router.replace('/(tabs)/scan')`.
+- "Skip for now" → `router.replace('/(tabs)/scan')` without requesting (CameraScreen handles it).
+- If permission was previously denied and `canAskAgain === false`: shows "Open Settings" instead of "Allow".
+
+### Key decisions
+
+- **Language is set during onboarding, before auth.** This means the app is localised from the first interaction, not after login.
+- **No auth on onboarding screens.** Authentication is deferred to Supabase Auth (not yet built). The onboarding flow is intentionally auth-free so it can be previewed without a Supabase account.
+- **`router.replace` (not `push`) from permission → scan.** This removes the onboarding stack from history so the back button doesn't return to onboarding after the app is set up.
+
+---
+
+## 8. Profile
+
+**Status:** complete
+
+### Description
+
+**File:** `features/profile/ProfileScreen.tsx`  →  `app/(tabs)/profile/index.tsx`
+
+Sections:
+- **Signed in as** — displays the authenticated user's email.
+- **Language** — `LanguageSelector` (full labels, not compact) wired to `useLocale`.
+- **District** — `TextInput` with `onEndEditing` saving to `users.district`. Shows a ✓ tick on save and an activity indicator while saving.
+- **Sign out** — calls `supabase.auth.signOut()`.
+- **Version** — reads from `Constants.expoConfig.version`.
+
+### Key decisions
+
+- **District is saved on `onEndEditing`** (keyboard dismiss or return key) not on every keystroke. This avoids excessive DB writes while the user is still typing.
+- **Sign-out is a local Supabase call** — no separate confirmation dialog for now. The navigation guard (not yet built) will redirect to onboarding on session loss.
 
 ---
 
