@@ -1,17 +1,62 @@
 {
   "scan": {
     "title": "Scan",
-    "cta": "Take a photo"
+    "cta": "Scan Crop",
+    "cta_sub": "Tanga Ifoto",
+    "gallery": "Upload from Gallery",
+    "recent": "Recent scans",
+    "recent_empty": "No scans yet — take your first photo above.",
+    "guide_label": "Frame the affected leaf"
   },
   "history": {
     "title": "History",
     "empty": "No scans yet"
   },
   "profile": {
-    "title": "Profile"
+    "title": "Profile",
+    "language": "Language"
   },
   "diagnosis": {
-    "loading": "Analyzing…",
-    "error": "Analysis failed. Please try again."
+    "loading_primary": "Analyzing plant health with Gemini Vision AI…",
+    "loading_sub": "Tugenzura ubuzima bw'ibimera bakoresheje Gemini Vision AI…",
+    "phase_uploading": "Uploading photo…",
+    "phase_analyzing": "Running AI analysis…",
+    "phase_done": "Done",
+    "phase_error": "Something went wrong",
+    "label": "Diagnosis",
+    "confidence": "AI Confidence",
+    "treatment_title": "Recommended Treatment",
+    "treatment_empty": "No treatment steps available.",
+    "scan_again": "Scan Again",
+    "listen": "Listen 🔊",
+    "listen_stop": "Stop 🔇",
+    "severity_low": "LOW SEVERITY",
+    "severity_medium": "MEDIUM SEVERITY",
+    "severity_high": "HIGH SEVERITY"
+  },
+  "low_confidence": {
+    "banner_title": "AI confidence too low — recommendation withheld",
+    "banner_sub": "Ubushobozi bwa AI buri hasi — inama ntiyatanzwe",
+    "explanation": "The AI could not confidently identify the disease from this photo. Providing a low-confidence diagnosis could lead to the wrong treatment being applied.",
+    "explanation_sub": "AI ntishobora kumenya indwara neza ukoresheje iki foto.",
+    "retake": "Retake Photo",
+    "escalate": "Send Directly to Local Agronomist",
+    "sent": "Sent to your local agronomist. You will be notified when they review your scan.",
+    "send_failed": "Failed to send. Please check your connection and try again."
+  },
+  "language": {
+    "en": "EN",
+    "rw": "RW",
+    "sw": "SW",
+    "fr": "FR"
+  },
+  "tts": {
+    "not_supported": "Text-to-speech is not supported on this device.",
+    "intro": "Diagnosis result. Disease: %{disease}. Confidence: %{pct} percent. Severity: %{severity}. Treatment steps: %{steps}"
+  },
+  "common": {
+    "error_title": "Analysis failed",
+    "error_load": "Could not load scan",
+    "missing_uri": "Missing image URI"
   }
 }

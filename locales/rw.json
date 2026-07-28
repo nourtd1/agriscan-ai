@@ -1,0 +1,62 @@
+{
+  "scan": {
+    "title": "Fota",
+    "cta": "Fota Umusaruro",
+    "cta_sub": "Scan Crop",
+    "gallery": "Shyiramo Ifoto",
+    "recent": "Amafoto ya vuba",
+    "recent_empty": "Nta foto nawe — fota ibimera byawe.",
+    "guide_label": "Shyira ikibabi kirwaye hagati"
+  },
+  "history": {
+    "title": "Amateka",
+    "empty": "Nta foto nawe"
+  },
+  "profile": {
+    "title": "Umwirondoro",
+    "language": "Ururimi"
+  },
+  "diagnosis": {
+    "loading_primary": "Tugenzura ubuzima bw'ibimera bakoresheje Gemini Vision AI…",
+    "loading_sub": "Analyzing plant health with Gemini Vision AI…",
+    "phase_uploading": "Kohereza ifoto…",
+    "phase_analyzing": "Gusesengura…",
+    "phase_done": "Byarangiye",
+    "phase_error": "Habaye ikosa",
+    "label": "Ubusobanuro",
+    "confidence": "Ikizere cya AI",
+    "treatment_title": "Ubuvuzi Bwasabwe",
+    "treatment_empty": "Nta makuru y'ubuvuzi ahari.",
+    "scan_again": "Fota Nanone",
+    "listen": "Umva 🔊",
+    "listen_stop": "Hagarika 🔇",
+    "severity_low": "UBUKABYI BUKE",
+    "severity_medium": "UBUKABYI BURI HAGATI",
+    "severity_high": "UBUKABYI BUNINI"
+  },
+  "low_confidence": {
+    "banner_title": "Ubushobozi bwa AI buri hasi — inama ntiyatanzwe",
+    "banner_sub": "AI confidence too low — recommendation withheld",
+    "explanation": "AI ntishobora kumenya indwara neza ukoresheje iki foto. Gutanga inama y'ikizere gike bishobora gutera kubyaza ingaruka mbi.",
+    "explanation_sub": "The AI could not confidently identify the disease from this photo.",
+    "retake": "Fota Nanone",
+    "escalate": "Ohereza Inzobere y'Ubuhinzi",
+    "sent": "Byoherejwe inzobere y'ubuhinzi yawe. Uzamenyeshwa igihe bazasuzuma ifoto yawe.",
+    "send_failed": "Byanze koherezwa. Reba umuyoboro w'internet ukongere ugerageze."
+  },
+  "language": {
+    "en": "EN",
+    "rw": "RW",
+    "sw": "SW",
+    "fr": "FR"
+  },
+  "tts": {
+    "not_supported": "Ubu buryo ntibushyirwa mu ngiro kuri iki gikoresho.",
+    "intro": "Ibisobanuro by'uburwayi. Indwara: %{disease}. Ikizere: %{pct} ku ijana. Ubukabyi: %{severity}. Inzira z'ubuvuzi: %{steps}"
+  },
+  "common": {
+    "error_title": "Isesengura ryanze",
+    "error_load": "Kugeraho ifoto byanze",
+    "missing_uri": "Inzira y'ifoto ibura"
+  }
+}

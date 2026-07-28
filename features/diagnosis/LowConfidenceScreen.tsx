@@ -45,6 +45,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../config/colors';
+import { useLocale } from '../i18n/LocaleContext';
 import { supabase } from '../../lib/supabase';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ export default function LowConfidenceScreen({
   onRetake,
 }: LowConfidenceScreenProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useLocale();
   const [sendState, setSendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   /**
@@ -141,25 +143,15 @@ export default function LowConfidenceScreen({
       <View style={styles.warningBanner}>
         <Text style={styles.warningIcon}>⚠️</Text>
         <View style={styles.warningTextBlock}>
-          <Text style={styles.warningTitle}>
-            AI confidence too low — recommendation withheld
-          </Text>
-          <Text style={styles.warningSubtext}>
-            Ubushobozi bwa AI buri hasi — inama ntiyatanzwe
-          </Text>
+          <Text style={styles.warningTitle}>{t('low_confidence.banner_title')}</Text>
+          <Text style={styles.warningSubtext}>{t('low_confidence.banner_sub')}</Text>
         </View>
       </View>
 
       {/* ── Explanation ── */}
       <View style={styles.explanationContainer}>
-        <Text style={styles.explanationText}>
-          The AI could not confidently identify the disease from this photo.
-          Providing a low-confidence diagnosis could lead to the wrong treatment
-          being applied.
-        </Text>
-        <Text style={styles.explanationTextKiny}>
-          AI ntishobora kumenya indwara neza ukoresheje iki foto.
-        </Text>
+        <Text style={styles.explanationText}>{t('low_confidence.explanation')}</Text>
+        <Text style={styles.explanationTextKiny}>{t('low_confidence.explanation_sub')}</Text>
       </View>
 
       {/* ── Actions ── */}
@@ -167,10 +159,7 @@ export default function LowConfidenceScreen({
         {sendState === 'sent' ? (
           <View style={styles.sentConfirmation}>
             <Text style={styles.sentIcon}>✓</Text>
-            <Text style={styles.sentText}>
-              Sent to your local agronomist. You will be notified when they
-              review your scan.
-            </Text>
+            <Text style={styles.sentText}>{t('low_confidence.sent')}</Text>
           </View>
         ) : (
           <>
@@ -178,10 +167,10 @@ export default function LowConfidenceScreen({
             <Pressable
               onPress={onRetake}
               style={({ pressed }) => [styles.retakeButton, pressed && styles.buttonPressed]}
-              accessibilityLabel="Retake photo"
+              accessibilityLabel={t('low_confidence.retake')}
               accessibilityRole="button"
             >
-              <Text style={styles.retakeText}>Retake Photo</Text>
+              <Text style={styles.retakeText}>{t('low_confidence.retake')}</Text>
             </Pressable>
 
             {/* Send to agronomist */}
@@ -193,22 +182,18 @@ export default function LowConfidenceScreen({
                 pressed && styles.buttonPressed,
                 sendState === 'sending' && styles.buttonDisabled,
               ]}
-              accessibilityLabel="Send scan to local agronomist"
+              accessibilityLabel={t('low_confidence.escalate')}
               accessibilityRole="button"
             >
               {sendState === 'sending' ? (
                 <ActivityIndicator color={Colors.surface} size="small" />
               ) : (
-                <Text style={styles.escalateText}>
-                  Send Directly to Local Agronomist
-                </Text>
+                <Text style={styles.escalateText}>{t('low_confidence.escalate')}</Text>
               )}
             </Pressable>
 
             {sendState === 'error' && (
-              <Text style={styles.errorText}>
-                Failed to send. Please check your connection and try again.
-              </Text>
+              <Text style={styles.errorText}>{t('low_confidence.send_failed')}</Text>
             )}
           </>
         )}

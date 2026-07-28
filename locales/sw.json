@@ -1,0 +1,62 @@
+{
+  "scan": {
+    "title": "Scan",
+    "cta": "Piga Picha ya Mazao",
+    "cta_sub": "Scan Crop",
+    "gallery": "Pakia kutoka Matunzio",
+    "recent": "Skana za hivi karibuni",
+    "recent_empty": "Hakuna skana bado — piga picha yako ya kwanza hapo juu.",
+    "guide_label": "Weka jani lililoathirika katikati"
+  },
+  "history": {
+    "title": "Historia",
+    "empty": "Hakuna skana bado"
+  },
+  "profile": {
+    "title": "Wasifu",
+    "language": "Lugha"
+  },
+  "diagnosis": {
+    "loading_primary": "Inachambua afya ya mmea kwa kutumia Gemini Vision AI…",
+    "loading_sub": "Tugenzura ubuzima bw'ibimera bakoresheje Gemini Vision AI…",
+    "phase_uploading": "Inapakia picha…",
+    "phase_analyzing": "Inafanya uchambuzi wa AI…",
+    "phase_done": "Imekamilika",
+    "phase_error": "Kuna hitilafu fulani",
+    "label": "Utambuzi",
+    "confidence": "Uhakika wa AI",
+    "treatment_title": "Matibabu Yanayopendekezwa",
+    "treatment_empty": "Hakuna hatua za matibabu zinazopatikana.",
+    "scan_again": "Scan Tena",
+    "listen": "Sikiliza 🔊",
+    "listen_stop": "Simama 🔇",
+    "severity_low": "UKALI WA CHINI",
+    "severity_medium": "UKALI WA KATI",
+    "severity_high": "UKALI WA JUU"
+  },
+  "low_confidence": {
+    "banner_title": "Uhakika wa AI ni mdogo sana — mapendekezo yamezuiwa",
+    "banner_sub": "Ubushobozi bwa AI buri hasi — inama ntiyatanzwe",
+    "explanation": "AI haikuweza kutambua ugonjwa kwa uhakika kutoka kwa picha hii. Kutoa utambuzi wa uhakika mdogo kunaweza kusababisha matibabu mabaya.",
+    "explanation_sub": "AI ntishobora kumenya indwara neza ukoresheje iki foto.",
+    "retake": "Piga Picha Tena",
+    "escalate": "Tuma Moja kwa Moja kwa Mtaalamu wa Kilimo wa Karibu",
+    "sent": "Imetumwa kwa mtaalamu wa kilimo wako wa karibu. Utaarifiwa watakapokagua skana yako.",
+    "send_failed": "Imeshindwa kutuma. Tafadhali angalia muunganisho wako na ujaribu tena."
+  },
+  "language": {
+    "en": "EN",
+    "rw": "RW",
+    "sw": "SW",
+    "fr": "FR"
+  },
+  "tts": {
+    "not_supported": "Usemi wa maandishi haukuungwa mkono kwenye kifaa hiki.",
+    "intro": "Matokeo ya utambuzi. Ugonjwa: %{disease}. Uhakika: asilimia %{pct}. Ukali: %{severity}. Hatua za matibabu: %{steps}"
+  },
+  "common": {
+    "error_title": "Uchambuzi umeshindwa",
+    "error_load": "Imeshindwa kupakia skana",
+    "missing_uri": "URI ya picha haipo"
+  }
+}

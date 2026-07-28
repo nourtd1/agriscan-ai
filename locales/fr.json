@@ -1,17 +1,62 @@
 {
   "scan": {
     "title": "Scanner",
-    "cta": "Prendre une photo"
+    "cta": "Scanner la Culture",
+    "cta_sub": "Tanga Ifoto",
+    "gallery": "Importer depuis la Galerie",
+    "recent": "Scans récents",
+    "recent_empty": "Aucun scan encore — prenez votre première photo ci-dessus.",
+    "guide_label": "Cadrez la feuille affectée"
   },
   "history": {
     "title": "Historique",
     "empty": "Aucun scan pour l'instant"
   },
   "profile": {
-    "title": "Profil"
+    "title": "Profil",
+    "language": "Langue"
   },
   "diagnosis": {
-    "loading": "Analyse en cours…",
-    "error": "Analyse échouée. Veuillez réessayer."
+    "loading_primary": "Analyse de la santé des plantes avec Gemini Vision AI…",
+    "loading_sub": "Tugenzura ubuzima bw'ibimera bakoresheje Gemini Vision AI…",
+    "phase_uploading": "Envoi de la photo…",
+    "phase_analyzing": "Analyse IA en cours…",
+    "phase_done": "Terminé",
+    "phase_error": "Une erreur s'est produite",
+    "label": "Diagnostic",
+    "confidence": "Confiance de l'IA",
+    "treatment_title": "Traitement Recommandé",
+    "treatment_empty": "Aucune étape de traitement disponible.",
+    "scan_again": "Scanner à nouveau",
+    "listen": "Écouter 🔊",
+    "listen_stop": "Arrêter 🔇",
+    "severity_low": "SÉVÉRITÉ FAIBLE",
+    "severity_medium": "SÉVÉRITÉ MOYENNE",
+    "severity_high": "SÉVÉRITÉ ÉLEVÉE"
+  },
+  "low_confidence": {
+    "banner_title": "Confiance IA trop faible — recommandation suspendue",
+    "banner_sub": "Ubushobozi bwa AI buri hasi — inama ntiyatanzwe",
+    "explanation": "L'IA n'a pas pu identifier la maladie avec certitude à partir de cette photo. Fournir un diagnostic à faible confiance pourrait entraîner l'application d'un mauvais traitement.",
+    "explanation_sub": "AI ntishobora kumenya indwara neza ukoresheje iki foto.",
+    "retake": "Reprendre la Photo",
+    "escalate": "Envoyer Directement à l'Agronome Local",
+    "sent": "Envoyé à votre agronome local. Vous serez notifié lorsqu'il examinera votre scan.",
+    "send_failed": "Échec de l'envoi. Vérifiez votre connexion et réessayez."
+  },
+  "language": {
+    "en": "EN",
+    "rw": "RW",
+    "sw": "SW",
+    "fr": "FR"
+  },
+  "tts": {
+    "not_supported": "La synthèse vocale n'est pas prise en charge sur cet appareil.",
+    "intro": "Résultat du diagnostic. Maladie : %{disease}. Confiance : %{pct} pourcent. Sévérité : %{severity}. Étapes de traitement : %{steps}"
+  },
+  "common": {
+    "error_title": "Analyse échouée",
+    "error_load": "Impossible de charger le scan",
+    "missing_uri": "URI d'image manquante"
   }
 }

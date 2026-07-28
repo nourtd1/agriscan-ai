@@ -37,6 +37,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { Colors } from '../../config/colors';
+import { useLocale } from '../i18n/LocaleContext';
 import type { DiagnosisPhase } from './useDiagnosis';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -70,6 +71,7 @@ export default function AnalysisLoadingScreen({
   imageUri,
   phase,
 }: AnalysisLoadingScreenProps) {
+  const { t } = useLocale();
   // Scanline: translateY sweeps from -SCANLINE_H to SCREEN_H, repeats.
   const scanY = useSharedValue(-40);
   // Pulse dot: opacity oscillates between 0.4 and 1.
@@ -113,12 +115,12 @@ export default function AnalysisLoadingScreen({
 
   const phaseLabel =
     phase === 'uploading'
-      ? 'Uploading photo…'
+      ? t('diagnosis.phase_uploading')
       : phase === 'analyzing'
-        ? 'Running AI analysis…'
+        ? t('diagnosis.phase_analyzing')
         : phase === 'error'
-          ? 'Something went wrong'
-          : 'Done';
+          ? t('diagnosis.phase_error')
+          : t('diagnosis.phase_done');
 
   return (
     <View style={styles.root}>
@@ -141,13 +143,9 @@ export default function AnalysisLoadingScreen({
         {/* Pulsing brand dot */}
         <Animated.View style={[styles.pulseDot, pulseStyle]} />
 
-        <Text style={styles.primaryText}>
-          Analyzing plant health with Gemini Vision AI…
-        </Text>
+        <Text style={styles.primaryText}>{t('diagnosis.loading_primary')}</Text>
 
-        <Text style={styles.kinyarwandaText}>
-          Tugenzura ubuzima bw'ibimera bakoresheje Gemini Vision AI…
-        </Text>
+        <Text style={styles.kinyarwandaText}>{t('diagnosis.loading_sub')}</Text>
 
         <View style={styles.phaseRow}>
           <View style={styles.phaseIndicator} />

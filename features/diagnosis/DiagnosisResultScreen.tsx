@@ -13,7 +13,11 @@
  *    is never shown below 0.60; guard is here for type-safety).
  *  - Treatment steps card: numbered list of actionable remediation steps
  *    returned by Gemini.
+ *  - Floating "Listen 🔊" / "Stop 🔇" TTS button — reads the diagnosis and
+ *    treatment steps aloud in the active locale via expo-speech.
  *  - "Scan Again" button at the bottom.
+ *
+ * All visible strings are sourced from the active locale via `useLocale().t()`.
  *
  * If `confidence < 0.60`, the caller must render `LowConfidenceScreen` instead.
  * This component does NOT enforce the threshold itself — that logic lives in the
@@ -22,6 +26,7 @@
  * Use cases
  * ---------
  * - Farmer receives a clear, high-confidence diagnosis and reads treatment steps.
+ * - Low-literacy farmer taps "Listen" to hear the diagnosis in Kinyarwanda.
  * - Field agent verifies the AI diagnosis before acting.
  */
 
@@ -36,6 +41,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../config/colors';
+import { useLocale } from '../i18n/LocaleContext';
+import { useTTS } from '../tts/useTTS';
 import type { DiagnosisData } from './useDiagnosis';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -61,21 +68,22 @@ interface DiagnosisResultScreenProps {
 
 /**
  * SeverityBadge — pill overlay showing low / medium / high severity.
+ * Label is sourced from the active locale.
  *
  * @param severity - The severity string from the diagnosis result.
  */
 function SeverityBadge({ severity }: { severity: DiagnosisData['severity'] }) {
+  const { t } = useLocale();
   const palette = {
     low: { bg: Colors.accent, text: Colors.primary },
     medium: { bg: Colors.warning, text: '#fff' },
     high: { bg: Colors.error, text: '#fff' },
   } as const;
   const { bg, text } = palette[severity];
+  const label = t(`diagnosis.severity_${severity}`);
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
-      <Text style={[styles.badgeText, { color: text }]}>
-        {severity.toUpperCase()} SEVERITY
-      </Text>
+      <Text style={[styles.badgeText, { color: text }]}>{label}</Text>
     </View>
   );
 }
@@ -83,12 +91,10 @@ function SeverityBadge({ severity }: { severity: DiagnosisData['severity'] }) {
 /**
  * ConfidenceGauge — segmented horizontal bar visualising confidence.
  *
- * Filled segments are coloured based on the value:
- *  ≥ 0.80 → green, 0.60–0.79 → amber.
- *
  * @param confidence - Confidence value in [0, 1].
  */
 function ConfidenceGauge({ confidence }: { confidence: number }) {
+  const { t } = useLocale();
   const filledCount = Math.round(confidence * GAUGE_SEGMENTS);
   const pct = Math.round(confidence * 100);
 
@@ -102,7 +108,7 @@ function ConfidenceGauge({ confidence }: { confidence: number }) {
   return (
     <View style={styles.gaugeContainer}>
       <View style={styles.gaugeHeader}>
-        <Text style={styles.gaugeLabel}>AI Confidence</Text>
+        <Text style={styles.gaugeLabel}>{t('diagnosis.confidence')}</Text>
         <Text style={[styles.gaugePct, { color: barColor }]}>{pct}%</Text>
       </View>
       <View style={styles.gaugeTrack}>
@@ -130,11 +136,12 @@ function ConfidenceGauge({ confidence }: { confidence: number }) {
  * @param steps - Array of step strings from the diagnosis result.
  */
 function TreatmentStepsCard({ steps }: { steps: string[] }) {
+  const { t } = useLocale();
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Recommended Treatment</Text>
+      <Text style={styles.cardTitle}>{t('diagnosis.treatment_title')}</Text>
       {steps.length === 0 ? (
-        <Text style={styles.stepText}>No treatment steps available.</Text>
+        <Text style={styles.stepText}>{t('diagnosis.treatment_empty')}</Text>
       ) : (
         steps.map((step, idx) => (
           <View key={idx} style={styles.stepRow}>
@@ -146,6 +153,38 @@ function TreatmentStepsCard({ steps }: { steps: string[] }) {
         ))
       )}
     </View>
+  );
+}
+
+/**
+ * TTSButton — floating circular button that triggers / stops speech.
+ *
+ * Displayed as a pill anchored to the bottom-right, floating over the scroll
+ * content. Uses a filled emerald-green style when idle, amber while speaking.
+ *
+ * @param data   - Diagnosis data passed to useTTS.
+ */
+function TTSButton({ data }: { data: DiagnosisData }) {
+  const { t, locale } = useLocale();
+  const { isSpeaking, isSupported, speak } = useTTS(data, locale);
+
+  if (!isSupported) return null;
+
+  return (
+    <Pressable
+      onPress={speak}
+      style={({ pressed }) => [
+        styles.ttsButton,
+        isSpeaking && styles.ttsButtonSpeaking,
+        pressed && styles.ttsButtonPressed,
+      ]}
+      accessibilityLabel={isSpeaking ? t('diagnosis.listen_stop') : t('diagnosis.listen')}
+      accessibilityRole="button"
+    >
+      <Text style={styles.ttsButtonText}>
+        {isSpeaking ? t('diagnosis.listen_stop') : t('diagnosis.listen')}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -162,49 +201,60 @@ export default function DiagnosisResultScreen({
   onScanAgain,
 }: DiagnosisResultScreenProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useLocale();
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ── Hero image ── */}
-      <View style={styles.heroContainer}>
-        <Image
-          source={{ uri: data.imageUrl }}
-          style={styles.heroImage}
-          resizeMode="cover"
-        />
-        <SeverityBadge severity={data.severity} />
-      </View>
-
-      {/* ── Disease heading ── */}
-      <View style={styles.diseaseSection}>
-        <Text style={styles.diseaseLabel}>Diagnosis</Text>
-        <Text style={styles.diseaseName}>{data.disease}</Text>
-      </View>
-
-      {/* ── Confidence gauge ── */}
-      <View style={styles.section}>
-        <ConfidenceGauge confidence={data.confidence} />
-      </View>
-
-      {/* ── Treatment steps ── */}
-      <View style={styles.section}>
-        <TreatmentStepsCard steps={data.treatment_steps} />
-      </View>
-
-      {/* ── Scan again button ── */}
-      <Pressable
-        onPress={onScanAgain}
-        style={({ pressed }) => [styles.scanAgainButton, pressed && styles.scanAgainPressed]}
-        accessibilityLabel="Scan another crop"
-        accessibilityRole="button"
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.scanAgainText}>Scan Again</Text>
-      </Pressable>
-    </ScrollView>
+        {/* ── Hero image ── */}
+        <View style={styles.heroContainer}>
+          <Image
+            source={{ uri: data.imageUrl }}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          <SeverityBadge severity={data.severity} />
+        </View>
+
+        {/* ── Disease heading ── */}
+        <View style={styles.diseaseSection}>
+          <Text style={styles.diseaseLabel}>{t('diagnosis.label')}</Text>
+          <Text style={styles.diseaseName}>{data.disease}</Text>
+        </View>
+
+        {/* ── Confidence gauge ── */}
+        <View style={styles.section}>
+          <ConfidenceGauge confidence={data.confidence} />
+        </View>
+
+        {/* ── Treatment steps ── */}
+        <View style={styles.section}>
+          <TreatmentStepsCard steps={data.treatment_steps} />
+        </View>
+
+        {/* ── Scan again button ── */}
+        <Pressable
+          onPress={onScanAgain}
+          style={({ pressed }) => [styles.scanAgainButton, pressed && styles.scanAgainPressed]}
+          accessibilityLabel={t('diagnosis.scan_again')}
+          accessibilityRole="button"
+        >
+          <Text style={styles.scanAgainText}>{t('diagnosis.scan_again')}</Text>
+        </Pressable>
+      </ScrollView>
+
+      {/* ── Floating TTS button — rendered outside ScrollView so it hovers ── */}
+      <View
+        style={[styles.ttsFloatContainer, { bottom: insets.bottom + 16 }]}
+        pointerEvents="box-none"
+      >
+        <TTSButton data={data} />
+      </View>
+    </View>
   );
 }
 
@@ -214,6 +264,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     flexGrow: 1,
@@ -382,6 +435,39 @@ const styles = StyleSheet.create({
   scanAgainText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '700',
+  },
+
+  // ── TTS floating button ───────────────────────────────────────────────────
+  ttsFloatContainer: {
+    position: 'absolute',
+    right: 20,
+    alignItems: 'flex-end',
+  },
+  ttsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+    borderRadius: 28,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  ttsButtonSpeaking: {
+    backgroundColor: Colors.warning,
+    shadowColor: Colors.warning,
+  },
+  ttsButtonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.96 }],
+  },
+  ttsButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '700',
   },
 });

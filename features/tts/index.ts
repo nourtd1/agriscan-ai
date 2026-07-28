@@ -1,2 +1,2 @@
-// TTS feature: text-to-speech for diagnosis results
-export {};
+// TTS feature public API.
+export { useTTS } from './useTTS';

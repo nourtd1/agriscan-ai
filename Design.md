@@ -236,29 +236,96 @@ is shown.
 
 ## 5. Internationalisation (i18n)
 
-**Status:** planned
+**Status:** complete
 
 ### Description
 
-<!-- Locale detection strategy, translation file format (locales/*.json), RTL support -->
+**Supported locales:**
+
+| Code | Language | File |
+|---|---|---|
+| `en` | English | `locales/en.json` |
+| `rw` | Kinyarwanda | `locales/rw.json` |
+| `sw` | Kiswahili | `locales/sw.json` |
+| `fr` | French | `locales/fr.json` |
+
+**Engine:** `i18n-js` v4 (`I18n` class). Single instance in `features/i18n/i18n.ts`. `enableFallback = true` so missing keys fall through to English rather than crashing.
+
+**Runtime switching:** `LocaleContext` (React context + provider) owns the active locale. Components call `useLocale()` to get `{ locale, setLocale, t }`. The `t(key, params?)` shorthand is a stable callback that rebinds when `locale` changes, triggering re-renders across the tree without prop-drilling.
+
+**Initialisation order:**
+1. Optimistic device locale from `expo-localization` (instant, no network).
+2. Async load of `users.preferred_language` from Supabase on mount.
+3. If the DB value is set and differs from device, it overrides (step 2 wins).
+
+**Persistence:** `setLocale(code)` writes to `public.users.preferred_language` fire-and-forget. UI updates immediately; DB write happens in the background.
+
+**Language selector:** `LanguageSelector` component — a row of four locale pills (EN / RW / SW / FR). Active pill: filled emerald-green. Inactive: ghost outline. Placed via `headerRight` in the tabs layout so it's accessible from every screen. Also usable inline on the Profile screen.
+
+**String key structure:**
+```
+scan.*         — CameraScreen strings
+history.*      — History tab
+profile.*      — Profile tab
+diagnosis.*    — Loading, result, TTS button labels, severity badges
+low_confidence.* — Warning banner, explanation, action buttons
+tts.*          — TTS not-supported message, spoken script template
+language.*     — Locale pill labels
+common.*       — Shared error strings
+```
+
+**RTL:** not implemented in this iteration. Kinyarwanda and Swahili are LTR. French is LTR. Add `I18nManager.forceRTL` if Arabic/Amharic support is added.
 
 ### Key decisions
 
-<!-- -->
+- **Context, not global state.** `LocaleProvider` is the React tree's single locale owner. `i18n.locale` is mutated as a side effect of context state, not the other way around — this ensures React re-renders propagate correctly.
+- **`t()` is a stable `useCallback`.** It rebinds on locale change, which is the only signal consumers need. Components don't import `i18n` directly.
+- **All UI strings must go through `t()`.** Hardcoded strings in components are a lint violation (enforce with a custom ESLint rule when the project matures).
+- **Loading sub-copy is always Kinyarwanda.** The `diagnosis.loading_sub` key is deliberately the complementary language (Kinyarwanda when locale is EN, English when locale is RW). This is intentional — the sub-copy is a secondary confirmation that the system is multilingual, not a translation of the primary copy.
 
 ---
 
 ## 6. Text-to-Speech (TTS)
 
-**Status:** planned
+**Status:** complete
 
 ### Description
 
-<!-- Which Expo/RN TTS library, playback controls, language matching with active locale -->
+**Library:** `expo-speech` — cross-platform, no extra native module setup required beyond the Expo managed workflow.
+
+**Entry point:** `features/tts/useTTS(data, locale)` hook. Returns `{ isSpeaking, isSupported, speak, stop }`.
+
+**Spoken script template** (from `tts.intro` in each locale file):
+```
+"Diagnosis result. Disease: {disease}. Confidence: {pct} percent.
+ Severity: {severity}. Treatment steps: {step1}. {step2}. …"
+```
+Steps are joined with ". " so the TTS engine pauses naturally between them.
+
+**Voice/language selection:** `LOCALE_SPEECH_LANG` maps locale codes to BCP-47 tags:
+
+| Locale | BCP-47 tag |
+|---|---|
+| `en` | `en-US` |
+| `rw` | `rw-RW` (no dedicated voice on most devices — OS falls back to default voice and reads phonetically) |
+| `sw` | `sw-TZ` |
+| `fr` | `fr-FR` |
+
+The phonetic fallback for Kinyarwanda is an acceptable degradation. The text is still spoken in the correct sequence; the pronunciation will not be perfect, but the content is correct. A native Kinyarwanda TTS voice would require an off-device API.
+
+**UI affordance:** `TTSButton` is a floating pill anchored `position: absolute` at `bottom + 16`, `right: 20` — it hovers over the `ScrollView` content without participating in the scroll layout. Idle state: emerald-green fill ("Listen 🔊"). Speaking state: amber fill ("Stop 🔇"). Hidden if `isSupported === false`.
+
+**Lifecycle:**
+- Playback stops when the component unmounts (navigation away).
+- Double-tap: tapping while speaking calls `stop()` immediately.
+- `onDone / onError / onStopped` callbacks all reset `isSpeaking` to false.
 
 ### Key decisions
 
-<!-- -->
+- **`useTTS` is locale-aware.** The hook receives `locale` as a parameter (not read from context internally) so it stays a pure function of its inputs and is easy to test.
+- **Rate 0.92.** Slightly slower than the system default (1.0) for clarity in field conditions (outdoor ambient noise, non-native speakers).
+- **Script is built from i18n templates.** The `tts.intro` key in each locale file controls the spoken structure. Changing the script format for one language does not require touching the hook code.
+- **TTS button is inside `DiagnosisResultScreen`, not the route controller.** The low-confidence screen deliberately has no TTS button — reading a withheld diagnosis aloud would defeat the safety gate.
 
 ---
 
