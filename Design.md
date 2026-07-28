@@ -41,7 +41,7 @@ The Scan tab is the primary entry point for crop-disease detection.
 
 ## 2. Diagnosis
 
-**Status:** in progress — `analyze-crop` Edge Function built; mobile integration (scan-result screen) pending
+**Status:** in progress — Edge Function + all mobile screens built; Auth/onboarding integration pending
 
 ### Description
 
@@ -104,6 +104,96 @@ supabase/functions/
     index.ts     — request handler, Gemini call, DB write
 ```
 
+**Mobile screen flow:**
+
+```
+app/scan-result/[id]  (route controller)
+  │
+  ├── id === "new" → NewScanController
+  │     │
+  │     ├── phase: uploading / analyzing
+  │     │       → AnalysisLoadingScreen
+  │     │           Full-screen crop photo + glowing green scanline animation
+  │     │           Status: "Analyzing plant health with Gemini Vision AI…"
+  │     │           Subtext in Kinyarwanda
+  │     │           Phase indicator: "Uploading photo…" / "Running AI analysis…"
+  │     │
+  │     ├── phase: done, confidence ≥ 0.60
+  │     │       → DiagnosisResultScreen
+  │     │           Hero image + severity badge (green/amber/red pill)
+  │     │           Disease name heading
+  │     │           Confidence gauge (20 segments, colour-coded)
+  │     │           Treatment steps card (numbered list)
+  │     │           "Scan Again" button
+  │     │
+  │     └── phase: done, confidence < 0.60
+  │             → LowConfidenceScreen  ← SAFETY GATE (see below)
+  │
+  └── id === "<uuid>" → ExistingScanController
+        Fetches scan row from Supabase → same branching as above
+        (no loading animation — result shown directly)
+```
+
+**Feature files:**
+```
+features/diagnosis/
+  useDiagnosis.ts           — upload → insert scan → call Edge Function → return result
+  AnalysisLoadingScreen.tsx — scanline animation, bilingual status copy
+  DiagnosisResultScreen.tsx — hero, severity badge, confidence gauge, treatment card
+  LowConfidenceScreen.tsx   — amber warning banner, retake + escalate actions
+  index.ts                  — public re-exports
+```
+
+### ⚠ Safety gate: low-confidence threshold
+
+**The `LowConfidenceScreen` is a deliberate patient-safety analogue for agriculture.**
+
+When `confidence < 0.60` (60 %), the following are intentionally withheld:
+- The disease name.
+- The confidence percentage.
+- All treatment steps.
+
+**Why withheld, not just warned about:**
+
+A warning banner alongside a visible diagnosis still anchors the farmer's
+decision to the AI's guess. Research in decision-making under uncertainty
+(anchoring bias) shows that people act on partially-disclosed information
+even when told it may be wrong. A subsistence farmer who misapplies a
+fungicide or pesticide based on a 45 % AI guess may:
+
+1. Spend money on the wrong chemical.
+2. Damage the crop further (e.g., applying a fungicide to a bacterial
+   infection, or vice versa).
+3. Build resistance in the pathogen population.
+4. Lose the harvest — which, in a food-insecure household, is irreversible.
+
+The threshold of 60 % was chosen because:
+- The Edge Function already routes to human review at 75 % (the agronomist
+  review queue exists for the 60–74 % grey zone).
+- Below 60 %, the model is essentially guessing; no treatment plan derived
+  from that guess should reach a farmer without expert sign-off.
+
+**What the screen shows instead:**
+- Amber banner: "AI confidence too low — recommendation withheld"
+- Plain-language explanation + Kinyarwanda subline.
+- **"Retake Photo"** — routes back to CameraScreen. Covers the most common
+  cause: blurry photo, wrong crop part, poor lighting.
+- **"Send Directly to Local Agronomist"** — creates an `agronomist_reviews`
+  row and sets scan status to `needs_review`. A real agronomist will examine
+  the original photo and provide a verified diagnosis.
+
+**Threshold constants:**
+
+| Constant | Value | Location | Meaning |
+|---|---|---|---|
+| `REVIEW_THRESHOLD` | 0.75 | Edge Function `analyze-crop/index.ts` | Server-side: below this, creates a review row |
+| `LOW_CONFIDENCE_THRESHOLD` | 0.60 | `features/diagnosis/LowConfidenceScreen.tsx` | Client-side: below this, withholds diagnosis entirely |
+
+The two thresholds are intentionally separate. The 0.75–1.00 range shows the
+diagnosis AND queues it for passive agronomist review. The 0.60–0.74 range
+shows the diagnosis but the review queue already exists. Below 0.60, nothing
+is shown.
+
 ### Key decisions
 
 - **API key never leaves the server.** `getApiKey()` in `_shared/models.ts` calls `Deno.env.get("GEMINI_API_KEY")`. The mobile app has no reference to the key whatsoever.
@@ -111,6 +201,8 @@ supabase/functions/
 - **Service-role client for DB writes.** The function verifies JWT ownership first, then uses the service-role client to write the diagnosis — this is necessary because RLS only allows the user to update their own rows, but the function runs in a server context without the user's session cookie.
 - **`needs_review` row created atomically.** If confidence < 0.75, the agronomist review row is inserted in the same function invocation. Failure is non-fatal (logged as warn); the scan is still marked `needs_review`.
 - **`verify_jwt = true` in `config.toml`.** Unauthenticated calls are rejected at the Edge Function gateway level before our code runs.
+- **Route controller, not screen, owns the threshold branch.** `app/scan-result/[id]/index.tsx` decides which screen to render. Neither `DiagnosisResultScreen` nor `LowConfidenceScreen` knows about the other — they are fully independent components. This makes the threshold easy to test in isolation.
+- **Scanline uses `react-native-reanimated` worklets.** The sweep animation runs on the UI thread via `useSharedValue` + `withRepeat`, so it never drops frames while the JS thread is busy uploading/fetching.
 
 ---
 
