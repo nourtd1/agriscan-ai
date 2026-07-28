@@ -60,7 +60,7 @@ function RootNavigator() {
       router.replace('/(auth)/sign-in');
     } else if (session && inAuth) {
       // Signed in — go to main app
-      router.replace('/(tabs)/scan/index');
+      router.replace('/(tabs)');
     }
   }, [session, segments, router]);
 

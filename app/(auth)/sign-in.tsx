@@ -60,7 +60,7 @@ export default function SignInScreen() {
       await supabase.from('users').upsert({ id: user.id }, { onConflict: 'id' });
     }
 
-    router.replace('/(tabs)/scan/index');
+    router.replace('/(tabs)');
   }
 
   async function handleGuest() {
@@ -76,7 +76,7 @@ export default function SignInScreen() {
     }
 
     await supabase.from('users').upsert({ id: data.user.id }, { onConflict: 'id' });
-    router.replace('/(tabs)/scan/index');
+    router.replace('/(tabs)');
   }
 
   return (
